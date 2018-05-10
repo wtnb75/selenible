@@ -1,0 +1,70 @@
+- name: version
+  echo: "selenible version {{selenible_version}}"
+- name: ensure version 0.1
+  ensure:
+    eq:
+      - "{{selenible_version}}"
+      - "0.1"
+- name: set variables
+  var:
+    archive: out.tar
+    #proxy: http://localhost:8080
+- name: window size
+  config:
+    window:
+      x: 600
+      y: 480
+- name: proxy
+  config:
+    proxy:
+      url: "{{proxy}}"
+- name: open url
+  open:
+    url: https://www.google.com/search
+    query:
+      q: selenium
+- name: shot1
+  screenshot:
+    output: shot1.png
+    # optimize: true
+    archive: "{{archive}}"
+- name: save1
+  save:
+    mode: title
+  register: gtitle
+- name: echo google title
+  echo: "{{gtitle[0]}}"
+- name: open next
+  open: https://wtnb.mydns.jp/
+- name: word count
+  runcmd:
+    cmd: wc
+    stdin: "{{page_source}}"
+- name: request header values
+  echo: "{{log['har'][0]['message']['log']['entries'][0]['request']['headers']}}"
+  when:
+    eq:
+      - "{{driver}}"
+      - "phantomjs"
+- name: response header values
+  echo: "{{log['har'][0]['message']['log']['entries'][0]['response']['headers']}}"
+  when:
+    eq:
+      - "{{driver}}"
+      - "phantomjs"
+- name: shot2
+  screenshot:
+    output: shot2.png
+    # optimize: true
+    archive: "{{archive}}"
+- name: save2
+  save:
+    mode: source
+    output: wtnb.html
+- name: back
+  history: back
+- name: shot3
+  screenshot:
+    output: shot3.png
+    # optimize: true
+    archive: "{{archive}}"

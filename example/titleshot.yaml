@@ -1,0 +1,15 @@
+- name: open
+  open: https://wtnb.mydns.jp/wordpress/
+- name: shot title1
+  screenshot: {}
+- name: shot title2
+  screenshot:
+    class: site-title
+    crop: auto
+- name: google
+  open: https://www.google.com/
+- name: shot logo1
+  screenshot: {}
+- name: shot logo2
+  screenshot:
+    id: hplogo

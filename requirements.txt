@@ -1,0 +1,11 @@
+selenium
+click
+PyYAML
+jinja2
+texttable
+jsonpath-rw
+toml
+pillow
+jsonschema
+lxml
+requests

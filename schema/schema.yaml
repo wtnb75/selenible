@@ -1,0 +1,225 @@
+$schema: http://json-schema.org/draft-04/schema
+definitions:
+  common:
+    locator:
+      type: object
+      properties:
+        id: {type: string}
+        xpath: {type: string}
+        linktext: {type: string}
+        partlinktext: {type: string}
+        name: {type: string}
+        tag: {type: string}
+        class: {type: string}
+        select: {type: string}
+        nth: {type: integer}
+    textvalue:
+      type: object
+      properties:
+        encoding: {type: string}
+        text: {type: string}
+        password: {type: string}
+        pipe:
+          oneOf:
+            - type: string
+            - type: array
+              items: {type: string}
+        yaml:
+          type: object
+          properties:
+            file: {type: string}
+            path: {type: string}
+          required: [file]
+        json:
+          type: object
+          properties:
+            file: {type: string}
+            path: {type: string}
+          required: [file]
+        toml:
+          type: object
+          properties:
+            file: {type: string}
+            path: {type: string}
+          required: [file]
+  open:
+    oneOf:
+      - type: string
+      - type: object
+        properties:
+          url: {type: string}
+          query: {type: object}
+        required: [url]
+  screenshot:
+    oneOf:
+      - type: string
+      - allOf:
+          - type: object
+            properties:
+              output: {type: string}
+              optimize: {type: boolean}
+              archive: {type: string}
+              crop:
+                oneOf:
+                  - type: string
+                    enum: [auto]
+                  - type: array
+                    items: {type: integer}
+              resize:
+                type: array
+                items: {type: integer}
+          - "$ref": "#/definitions/common/locator"
+  var: {type: object}
+  var_from:
+    type: object
+    properties:
+      yaml: {type: string}
+      json: {type: string}
+      toml: {type: string}
+  runcmd:
+    oneOf:
+      - type: string
+      - type: array
+        items: {type: string}
+      - type: object
+        properties:
+          stdout: {type: string}
+          stderr: {type: string}
+          stdin: {type: string}
+          cmd:
+            oneOf:
+              - type: string
+              - type: array
+        required: [cmd]
+  echo:
+    oneOf:
+      - type: string
+      - "$ref": "#/definitions/common/textvalue"
+  sleep: {type: integer}
+  include:
+    oneOf:
+      - type: string
+      - type: array
+        items: {type: string}
+  config:
+    type: object
+    properties:
+      wait: {type: integer}
+      cookie: {type: object}
+      window:
+        type: object
+        properties:
+          x: {type: integer}
+          y: {type: integer}
+          width: {type: integer}
+          height: {type: integer}
+        oneOf:
+          - required: [x, y]
+          - required: [x, height]
+          - required: [width, y]
+          - required: [width, height]
+      log:
+        oneOf:
+          - type: string
+          - type: object
+  click: {"$ref": "#/definitions/common/locator"}
+  submit: {"$ref": "#/definitions/common/locator"}
+  waitfor:
+    type: object
+    # TBD
+  script:
+    oneOf:
+      - type: string
+      - type: array
+        items: {type: string}
+      - type: object
+        properties:
+          file: {type: string}
+        required: [file]
+  history:
+    oneOf:
+      - type: string
+        enum: [forward, fwd, f, backward, back, b]
+      - type: array
+        items:
+          type: string
+          enum: [forward, fwd, f, backward, back, b]
+  sendKeys:
+    allOf:
+      - "$ref": "#/definitions/common/locator"
+      - "$ref": "#/definitions/common/textvalue"
+      - type: object
+        properties:
+          clear: {type: boolean}
+  save:
+    allOf:
+      - type: object
+        properties:
+          mode:
+            type: string
+            enum: ["source", "text", "title"]
+          output: {type: string}
+      - "$ref": "#/definitions/common/locator"
+  dragdrop:
+    type: object
+    properties:
+      src: {"$ref": "#/definitions/common/locator"}
+      dst: {"$ref": "#/definitions/common/locator"}
+  switch:
+    oneOf:
+      - type: string
+        enum: [default]
+      - type: boolean
+      - type: "null"
+      - type: object
+        properties:
+          window: {type: string}
+          frame: {type: string}
+  xslt:
+    allOf:
+      - "$ref": "#/definitions/common/locator"
+      - type: object
+        properties:
+          output: {type: string}
+          proc: {type: string}
+        requires: [proc]
+type: array
+items:
+  type: object
+  properties:
+    name:
+      type: string
+    when:
+      oneOf:
+        - type: object
+        - type: boolean
+    when_not:
+      oneOf:
+        - type: object
+        - type: boolean
+    with_items:
+      type: array
+    register:
+      type: string
+    open:       {"$ref": "#/definitions/open"}
+    screenshot: {"$ref": "#/definitions/screenshot"}
+    var:        {"$ref": "#/definitions/var"}
+    var_from:   {"$ref": "#/definitions/var_from"}
+    runcmd:     {"$ref": "#/definitions/runcmd"}
+    echo:       {"$ref": "#/definitions/echo"}
+    sleep:      {"$ref": "#/definitions/sleep"}
+    include:    {"$ref": "#/definitions/include"}
+    config:     {"$ref": "#/definitions/config"}
+    # ensure:     {"$ref": "#/definitions/ensure"}
+    # ensure_not: {"$ref": "#/definitions/ensure_not"}
+    click:      {"$ref": "#/definitions/click"}
+    submit:     {"$ref": "#/definitions/submit"}
+    waitfor:    {"$ref": "#/definitions/waitfor"}
+    script:     {"$ref": "#/definitions/script"}
+    history:    {"$ref": "#/definitions/history"}
+    sendKeys:   {"$ref": "#/definitions/sendKeys"}
+    save:       {"$ref": "#/definitions/save"}
+    dragdrop:   {"$ref": "#/definitions/dragdrop"}
+    switch:     {"$ref": "#/definitions/switch"}
+    xslt:       {"$ref": "#/definitions/xslt"}
+  required: [name]

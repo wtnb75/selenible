@@ -1,0 +1,10 @@
+*.log
+*.pdf
+*.png
+__pycache__
+*.tar
+*.html
+*.egg-info/
+dist/
+build/
+*.sh

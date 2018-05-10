@@ -1,0 +1,25 @@
+- name: subroutine
+  progn:
+  - name: debug1
+    echo: hello world {{item}} {{iter}}
+  - name: debug2
+    echo: good-bye world {{item}}
+  - name: test-skip
+    echo: skip?
+    when:
+      and:
+        - true
+        - false
+  - name: skip2
+    echo: skip2?
+    when_not:
+      or:
+        - equals:
+          - 1
+          - 2
+          - 3
+        - is_not:
+          - abc
+          - def
+  when: true
+  with_items: [v1, v2, v3]

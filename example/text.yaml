@@ -1,0 +1,23 @@
+- name: open
+  open: https://www.google.com/
+- name: set variable (v1="blabla")
+  register: v1
+  set:
+    text: blabla
+- name: set variable v2
+  register: v2
+  set:
+    xpath: '//a'
+    parseHTML: true
+- name: echo
+  echo: "v1={{v1}}, v2={{v2|map(attribute='text')|reject('none')|map('trim')|join(',')}}"
+- name: set variable from stdin
+  register: v3
+  set:
+    input: 'hello world: '
+- name: set variable from stdin(passwd)
+  register: v4
+  set:
+    input_password: "hello password :"
+- name: echo
+  echo: "v3={{v3}}, v3low={{v3|lower}}, v4={{v4}}, v4up={{v4|upper}}"
