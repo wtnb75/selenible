@@ -1,3 +1,4 @@
+import sys
 import os
 import subprocess
 import inspect
@@ -16,6 +17,7 @@ import toml
 import click
 import jsonpath_rw
 import jsonschema
+from pkg_resources import resource_stream
 from lxml import etree
 from PIL import Image, ImageChops
 from selenium import webdriver
@@ -27,6 +29,7 @@ from .version import VERSION
 class Base:
     driver = None
     passcmd = "pass"
+    schema = yaml.load(resource_stream(__name__, 'schema/base.yaml'))
 
     def __init__(self, driver):
         self.step = False
@@ -64,7 +67,13 @@ class Base:
                 log.debug("register method: %s", m[len(pfx):])
                 name = "do_%s" % (m[len(pfx):])
                 setattr(cls, name, fn)
-                mtd.append(m[len(pfx):])
+                funcname = m[len(pfx):]
+                mtd.append(funcname)
+                scmname = "%s_schema" % (funcname)
+                if hasattr(mod, scmname):
+                    scm = getattr(mod, scmname)
+                    if isinstance(scm, dict):
+                        cls.schema["items"]["properties"][funcname] = scm
             else:
                 log.warn("%s is not callable", fn)
         if len(mtd) != 0:
@@ -545,23 +554,14 @@ drvmap = {
 }
 
 
-@click.command()
-@click.option("--list-module", is_flag=True, default=False)
-@click.option("--verbose", is_flag=True, default=False)
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--step", is_flag=True, default=False)
-@click.option("--validate", type=click.File('r'), required=False)
-@click.option("-e", multiple=True)
-@click.option("--extension", multiple=True)
-@click.option("--var", type=click.File('r'), required=False)
-@click.argument("input", type=click.File('r'), required=False)
-def cli(verbose, list_module, input, driver, step, var, e, validate, extension):
-    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
-    if verbose:
-        basicConfig(format=logfmt, level=DEBUG)
-    else:
-        basicConfig(format=logfmt, level=INFO)
-    captureWarnings(True)
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx):
+    if ctx.invoked_subcommand is None:
+        print(ctx.get_help())
+
+
+def loadmodules(driver, extension):
     Base.load_modules("ctrl")
     Base.load_modules("browser")
     for ext in extension:
@@ -570,21 +570,26 @@ def cli(verbose, list_module, input, driver, step, var, e, validate, extension):
     drvcls.load_modules(drvcls.__name__.lower())
     for ext in extension:
         drvcls.load_modules(ext)
-    if list_module:
-        from texttable import Texttable
-        table = Texttable()
-        table.set_cols_align(["l", "l"])
-        # table.set_deco(Texttable.HEADER)
-        table.header(["Module", "Description"])
-        mods = drvcls.listmodule()
-        for k in sorted(mods.keys()):
-            table.add_row([k, mods[k]])
-        print(table.draw())
-    elif validate is not None and input is not None:
-        schema = yaml.load(validate)
-        prog = yaml.load(input)
-        jsonschema.validate(prog, schema)
-    elif input is not None:
+    return drvcls
+
+
+@cli.command(help="run playbook")
+@click.option("--verbose", is_flag=True, default=False)
+@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
+@click.option("--step", is_flag=True, default=False)
+@click.option("-e", multiple=True)
+@click.option("--extension", multiple=True)
+@click.option("--var", type=click.File('r'), required=False)
+@click.argument("input", type=click.File('r'), required=False)
+def run(verbose, input, driver, step, var, e, extension):
+    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
+    if verbose:
+        basicConfig(format=logfmt, level=DEBUG)
+    else:
+        basicConfig(format=logfmt, level=INFO)
+    captureWarnings(True)
+    drvcls = loadmodules(driver, extension)
+    if input is not None:
         prog = yaml.load(input)
         b = drvcls()
         for k, v in os.environ.items():
@@ -601,6 +606,50 @@ def cli(verbose, list_module, input, driver, step, var, e, validate, extension):
         b.run(prog)
     else:
         click.echo("show usage: --help")
+
+
+@cli.command("list-modules", help="list modules")
+@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
+@click.option("--extension", multiple=True)
+def list_modules(driver, extension):
+    drvcls = loadmodules(driver, extension)
+    from texttable import Texttable
+    table = Texttable()
+    table.set_cols_align(["l", "l"])
+    # table.set_deco(Texttable.HEADER)
+    table.header(["Module", "Description"])
+    mods = drvcls.listmodule()
+    for k in sorted(mods.keys()):
+        table.add_row([k, mods[k]])
+    print(table.draw())
+
+
+@cli.command("dump-schema", help="dump json schema")
+@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
+@click.option("--extension", multiple=True)
+@click.option("--format", default="yaml", type=click.Choice(["yaml", "json", "python"]))
+def dump_schema(driver, extension, format):
+    drvcls = loadmodules(driver, extension)
+    if format == "yaml":
+        yaml.dump(drvcls.schema, sys.stdout, default_flow_style=False)
+    elif format == "json":
+        json.dump(drvcls.schema, fp=sys.stdout, ensure_ascii=False)
+    elif format == "python":
+        print(drvcls.schema)
+    else:
+        raise Exception("unknown format: %s" % (format))
+
+
+@cli.command(help="validate by json schema")
+@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
+@click.option("--extension", multiple=True)
+@click.argument("input", type=click.File('r'), required=False)
+def validate(driver, extension, input):
+    drvcls = loadmodules(driver, extension)
+    prog = yaml.load(input)
+    print("validating...")
+    jsonschema.validate(prog, drvcls.schema)
+    print("OK")
 
 
 if __name__ == "__main__":

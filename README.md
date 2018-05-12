@@ -19,22 +19,20 @@ do selenium like ansible
 
 ```
 # python -m selenible.base --help
-Usage: base.py [OPTIONS] [INPUT]
+Usage: selenible [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  --list-module
-  --verbose
-  --driver [webkit|chrome|edge|phantom|firefox|safari]
-  --step
-  --validate FILENAME
-  -e TEXT
-  --extension TEXT
-  --var FILENAME
-  --help                          Show this message and exit.
+  --help  Show this message and exit.
+
+Commands:
+  dump-schema   dump json schema
+  list-modules  list modules
+  run           run playbook
+  validate      validate by json schema
 ```
 
 ```
-# python -m selenible.base --list-module
+# python -m selenible.base list-modules
 +--------------+---------------------------------------------------------------+
 |    Module    |                          Description                          |
 +==============+===============================================================+
@@ -77,3 +75,5 @@ Options:
 - name: screenshot
   screenshot: output.png
 ```
+
+and [more examples](example/)...
