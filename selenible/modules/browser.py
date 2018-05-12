@@ -1,11 +1,23 @@
 import math
 import time
 import urllib.parse
+import yaml
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.support.select import Select
+
+
+open_schema = yaml.load("""
+oneOf:
+  - type: string
+  - type: object
+    properties:
+      url: {type: string}
+      query: {type: object}
+    required: [url]
+""")
 
 
 def Base_open(self, param):
@@ -31,6 +43,28 @@ def Base_open(self, param):
             url += "?"
             url += qstr
         self.driver.get(url)
+
+
+screenshot_schema = yaml.load("""
+oneOf:
+  - type: string
+  - allOf:
+      - type: object
+        properties:
+          output: {type: string}
+          optimize: {type: boolean}
+          archive: {type: string}
+          crop:
+            oneOf:
+              - type: string
+                enum: [auto]
+              - type: array
+                items: {type: integer}
+          resize:
+            type: array
+            items: {type: integer}
+      - "$ref": "#/definitions/common/locator"
+""")
 
 
 def Base_screenshot(self, param):
@@ -76,6 +110,9 @@ def Base_screenshot(self, param):
             self.archiveimg(output, param.get("archive"))
 
 
+click_schema = {"$ref": "#/definitions/common/locator"}
+
+
 def Base_click(self, param):
     """
     - name: click1
@@ -86,6 +123,9 @@ def Base_click(self, param):
         xpath: //div[1]
     """
     self.findmany2one(param).click()
+
+
+submit_schema = click_schema
 
 
 def Base_submit(self, param):
@@ -144,6 +184,18 @@ def Base_waitfor(self, param):
     raise Exception("not implemented: param=%s" % (param))
 
 
+script_schema = yaml.load("""
+oneOf:
+  - type: string
+  - type: array
+    items: {type: string}
+  - type: object
+    properties:
+      file: {type: string}
+    required: [file]
+""")
+
+
 def Base_script(self, param):
     """
     - name: execute js
@@ -162,6 +214,17 @@ def Base_script(self, param):
             self.driver.execute_script(f.read())
     else:
         raise Exception("parameter error: %s" % (param))
+
+
+history_schema = yaml.load("""
+oneOf:
+  - type: string
+    enum: [forward, fwd, f, backward, back, b]
+  - type: array
+    items:
+      type: string
+      enum: [forward, fwd, f, backward, back, b]
+""")
 
 
 def Base_history(self, param):
@@ -193,6 +256,16 @@ def Base_history(self, param):
         raise Exception("history: not supported direction: %s" % (param))
 
 
+sendKeys_schema = yaml.load("""
+allOf:
+  - "$ref": "#/definitions/common/locator"
+  - "$ref": "#/definitions/common/textvalue"
+  - type: object
+    properties:
+      clear: {type: boolean}
+""")
+
+
 def Base_sendKeys(self, param):
     """
     - name: input username
@@ -214,6 +287,18 @@ def Base_sendKeys(self, param):
         elem.clear()
     elem.send_keys(txt)
     return self.return_element(param, elem)
+
+
+save_schema = yaml.load("""
+allOf:
+  - type: object
+    properties:
+      mode:
+        type: string
+        enum: ["source", "source_outer", "text", "title"]
+      output: {type: string}
+  - "$ref": "#/definitions/common/locator"
+""")
 
 
 def Base_save(self, param):
@@ -264,6 +349,14 @@ def Base_save(self, param):
     return txt
 
 
+dragdrop_schema = yaml.load("""
+type: object
+properties:
+  src: {"$ref": "#/definitions/common/locator"}
+  dst: {"$ref": "#/definitions/common/locator"}
+""")
+
+
 def Base_dragdrop(self, param):
     """
     - name: drag and drop
@@ -276,6 +369,19 @@ def Base_dragdrop(self, param):
     src = self.findmany2one(param.get("src"))
     dst = self.findmany2one(param.get("dst"))
     ActionChains(self.driver).drag_and_drop(src, dst).perform()
+
+
+switch_schema = yaml.load("""
+oneOf:
+  - type: string
+    enum: [default]
+  - type: boolean
+  - type: "null"
+  - type: object
+    properties:
+      window: {type: string}
+      frame: {type: string}
+""")
 
 
 def Base_switch(self, param):
@@ -307,6 +413,14 @@ def Base_dropfile(self, param):
     raise Exception("not implemented yet")
 
 
+deletecookie_schema = yaml.load("""
+oneOf:
+  - type: array
+    items: {type: string}
+  - type: string
+""")
+
+
 def Base_deletecookie(self, param):
     """
     - name: delete all cookie
@@ -325,6 +439,9 @@ def Base_deletecookie(self, param):
         raise Exception("invalid argument")
 
 
+alertOK_schema = {"type": "boolean"}
+
+
 def Base_alertOK(self, param):
     """
     - name: accept alert
@@ -339,6 +456,14 @@ def Base_alertOK(self, param):
             Alert(self.driver).dismiss()
 
 
+auth_schema = yaml.load("""
+type: object
+properties:
+  username: {type: string}
+  password: {type: string}
+""")
+
+
 def Base_auth(self, param):
     """
     - name: basic/digest auth
@@ -349,6 +474,21 @@ def Base_auth(self, param):
     user = param.get("username", "")
     passwd = param.get("password", "")
     Alert(self.driver).authenticate(user, passwd)
+
+
+select_schema = yaml.load("""
+allOf:
+  - "$ref": "#/definitions/common/locator"
+  - type: object
+    properties:
+      by_index: {type: integer}
+      by_value: {type: string}
+      by_text: {type: string}
+      all: {type: boolean}
+      return:
+        type: string
+        enum: [selected, first, all]
+""")
 
 
 def Base_select(self, param):

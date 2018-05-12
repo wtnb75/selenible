@@ -9,6 +9,12 @@ from lxml import etree
 import logging.config
 
 
+progn_schema = yaml.load("""
+type: array
+items: {type: object}
+""")
+
+
 def Base_progn(self, param):
     """
     - name: subroutine
@@ -21,6 +27,9 @@ def Base_progn(self, param):
     self.run(param)
 
 
+var_schema = {"type": "object"}
+
+
 def Base_var(self, param):
     """
     - name: set variables
@@ -31,6 +40,15 @@ def Base_var(self, param):
          - value2.2
     """
     self.variables.update(param)
+
+
+var_from_schema = yaml.load("""
+type: object
+properties:
+  yaml: {type: string}
+  json: {type: string}
+  toml: {type: string}
+""")
 
 
 def Base_var_from(self, param):
@@ -93,15 +111,29 @@ def Base_runcmd(self, param):
         raise Exception("runcmd: param not supported: %s" % (param))
 
 
+echo_schema = yaml.load("""
+oneOf:
+  - type: string
+  - "$ref": "#/definitions/common/textvalue"
+""")
+
+
 def Base_echo(self, param):
     """
     - name: debug message
       echo:
         text: hello world
     """
-    txt = self.getvalue(param)
-    self.log.info("echo %s", txt)
-    return txt
+    if isinstance(param, str):
+        self.log.info("echo %s", param)
+        return param
+    else:
+        txt = self.getvalue(param)
+        self.log.info("echo %s", txt)
+        return txt
+
+
+sleep_schema = {"type": "integer"}
 
 
 def Base_sleep(self, param):
@@ -110,6 +142,14 @@ def Base_sleep(self, param):
       sleep: 10
     """
     time.sleep(int(param))
+
+
+include_schema = yaml.load("""
+oneOf:
+  - type: string
+  - type: array
+    items: {type: string}
+""")
 
 
 def Base_include(self, param):
@@ -180,6 +220,9 @@ def Base_config(self, param):
         self.driver.set_script_timeout(param.get("script_timeout"))
 
 
+ensure_schema = {"$ref": "#/definitions/common/condition"}
+
+
 def Base_ensure(self, param):
     """
     - name: check condition
@@ -191,6 +234,9 @@ def Base_ensure(self, param):
     if not self.eval_param(param):
         self.log.error("condition failed: %s", param)
         raise Exception("condition failed: %s" % (param))
+
+
+ensure_not_schema = ensure_schema
 
 
 def Base_ensure_not(self, param):
@@ -206,6 +252,14 @@ def Base_ensure_not(self, param):
         raise Exception("condition(not) failed: %s" % (param))
 
 
+xslt_schema = yaml.load("""
+type: object
+properties:
+  proc: {type: string}
+  output: {type: string}
+""")
+
+
 def Base_xslt(self, param):
     """
     - name: transform
@@ -216,7 +270,7 @@ def Base_xslt(self, param):
                     <xsl:value-of select="//a/@href" />
                 </xsl:template>
             </xsl:stylesheet>
-      output: outfile.txt
+        output: outfile.txt
     """
     if isinstance(param, dict):
         proc = etree.XSLT(etree.XML(param.get("proc", "")))
@@ -237,6 +291,18 @@ def Base_xslt(self, param):
         return rst
     else:
         raise Exception("invalid parameter: %s" % (param))
+
+
+download_schema = yaml.load("""
+type: object
+properties:
+  url: {type: string}
+  method: {type: string}
+  query: {type: object}
+  headers: {type: object}
+  json: {type: boolean}
+  output: {type: string}
+""")
 
 
 def Base_download(self, param):
@@ -274,6 +340,16 @@ def Base_download(self, param):
     if is_json:
         return resp.json()
     return resp.text
+
+
+set_schema = yaml.load("""
+anyOf:
+  - "$ref": "#/definitions/common/locator"
+  - "$ref": "#/definitions/common/textvalue"
+  - type: object
+    properties:
+      parseHTML: {type: boolean}
+""")
 
 
 def Base_set(self, param):

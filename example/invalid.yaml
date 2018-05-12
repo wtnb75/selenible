@@ -1,0 +1,4 @@
+- nama: debug1
+  echo: hello world {{item}} {{iter}}
+- name: debug2
+  echo: good-bye world {{item}}
