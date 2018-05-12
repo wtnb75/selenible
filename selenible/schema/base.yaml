@@ -1,0 +1,61 @@
+$schema: http://json-schema.org/draft-04/schema
+definitions:
+  common:
+    locator:
+      type: object
+      properties:
+        id: {type: string}
+        xpath: {type: string}
+        linktext: {type: string}
+        partlinktext: {type: string}
+        name: {type: string}
+        tag: {type: string}
+        class: {type: string}
+        select: {type: string}
+        nth: {type: integer}
+    textvalue:
+      type: object
+      properties:
+        encoding: {type: string}
+        text: {type: string}
+        password: {type: string}
+        input: {type: string}
+        input_password: {type: string}
+        pipe:
+          oneOf:
+            - type: string
+            - type: array
+              items: {type: string}
+        yaml:
+          type: object
+          properties:
+            file: {type: string}
+            path: {type: string}
+          required: [file]
+        json:
+          type: object
+          properties:
+            file: {type: string}
+            path: {type: string}
+          required: [file]
+        toml:
+          type: object
+          properties:
+            file: {type: string}
+            path: {type: string}
+          required: [file]
+    condition:
+      oneOf:
+        - type: boolean
+        - type: object
+        # TBD
+type: array
+items:
+  type: object
+  properties:
+    name: {type: string}
+    when: {"$ref": "#/definitions/common/condition"}
+    when_not: {"$ref": "#/definitions/common/condition"}
+    with_items: {type: array}
+    register: {type: string}
+  required: [name]
