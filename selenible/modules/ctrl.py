@@ -3,6 +3,7 @@ import json
 import yaml
 import toml
 import tempfile
+import urllib.parse
 import requests
 from subprocess import DEVNULL
 from lxml import etree
@@ -321,6 +322,7 @@ def Base_download(self, param):
     if url is None:
         raise Exception("url mut set: %s" % (param))
     parsed_url = urllib.parse.urlparse(url)
+    self.log.debug("URL parsed: %s", parsed_url)
     method = param.get("method", "get")
     query = param.get("query", None)
     cookies = self.driver.get_cookies()
@@ -366,7 +368,6 @@ def Base_set(self, param):
     - name: echo
       echo: 'v1={{v1}}, v2={%for x in v2%}{{x.get("href")}},{%endfor%}'
     """
-    parsehtml = param.get("parseHTML", False)
     res = self.getvalue(param)
     if res is not None:
         return self.return_element(param, res)

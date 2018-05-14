@@ -21,6 +21,7 @@ definitions:
         password: {type: string}
         input: {type: string}
         input_password: {type: string}
+        input_multiline: {type: string}
         pipe:
           oneOf:
             - type: string

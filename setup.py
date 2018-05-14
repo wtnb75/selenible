@@ -1,4 +1,3 @@
-from glob import glob
 from setuptools import setup
 from selenible.version import VERSION
 

@@ -8,8 +8,9 @@ import time
 import functools
 import tempfile
 import getpass
+import pprint
 import urllib.parse
-from logging import getLogger, basicConfig, DEBUG, INFO, captureWarnings
+from logging import getLogger, basicConfig, DEBUG, INFO, WARN, captureWarnings
 
 import json
 import yaml
@@ -54,12 +55,19 @@ class Base:
         log.info("load module %s", modname)
         pfx = cls.__name__ + "_"
         try:
-            mod1 = __import__("selenible.modules", globals(), locals(), [modname], 0)
-            mod = getattr(mod1, modname)
+            mm = modname.rsplit(".", 1)
+            if len(mm) == 1:
+                modfirst = "selenible.modules"
+                modlast = mm[0]
+            else:
+                modfirst = mm[0]
+                modlast = mm[1]
+            mod1 = __import__(modfirst, globals(), locals(), [modlast], 0)
+            mod = getattr(mod1, modlast)
         except AttributeError as e:
-            log.debug("cannot import %s from selenible.modules", modname)
+            log.debug("cannot import %s from %s", modlast, modfirst)
             return
-        log.debug("loaded: %s", dir(mod))
+        log.debug("names: %s", dir(mod))
         mtd = []
         for m in filter(lambda f: f.startswith(pfx), dir(mod)):
             fn = getattr(mod, m)
@@ -357,6 +365,11 @@ class Base:
             return input(param.get("input"))
         elif "input_password" in param:
             return getpass.getpass(param.get("input_password"))
+        elif "input_multiline" in param:
+            print(param.get("input_multiline"))
+            res = sys.stdin.read()
+            sys.stdin.seek(0)
+            return res
         return None
 
     def eval_param(self, param):
@@ -431,7 +444,7 @@ class Base:
             return [etree.fromstring(x.get_attribute("outerHTML")) for x in elem]
         elif isinstance(elem, str):
             return etree.fromstring(elem)
-        return etree.fromstring(x.get_attribute("outerHTML"))
+        return etree.fromstring(elem.get_attribute("outerHTML"))
 
 
 class Phantom(Base):
@@ -554,8 +567,27 @@ drvmap = {
 }
 
 
+def set_verbose(ctx, param, value):
+    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
+    if not value or ctx.resilient_parsing:
+        basicConfig(format=logfmt, level=INFO)
+        return
+    basicConfig(format=logfmt, level=DEBUG)
+
+
+def set_quiet(ctx, param, value):
+    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
+    if not value or ctx.resilient_parsing:
+        basicConfig(format=logfmt, level=INFO)
+        return
+    basicConfig(format=logfmt, level=WARN)
+
+
 @click.group(invoke_without_command=True)
 @click.pass_context
+@click.version_option(version=VERSION, prog_name="selenible")
+@click.option("--verbose", is_flag=True, callback=set_verbose, expose_value=False, is_eager=True)
+@click.option("--quiet", "--silent", is_flag=True, callback=set_quiet, expose_value=False, is_eager=True)
 def cli(ctx):
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
@@ -574,19 +606,13 @@ def loadmodules(driver, extension):
 
 
 @cli.command(help="run playbook")
-@click.option("--verbose", is_flag=True, default=False)
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
 @click.option("--step", is_flag=True, default=False)
 @click.option("-e", multiple=True)
 @click.option("--extension", multiple=True)
 @click.option("--var", type=click.File('r'), required=False)
 @click.argument("input", type=click.File('r'), required=False)
-def run(verbose, input, driver, step, var, e, extension):
-    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
-    if verbose:
-        basicConfig(format=logfmt, level=DEBUG)
-    else:
-        basicConfig(format=logfmt, level=INFO)
+def run(input, driver, step, var, e, extension):
     captureWarnings(True)
     drvcls = loadmodules(driver, extension)
     if input is not None:
@@ -627,7 +653,7 @@ def list_modules(driver, extension):
 @cli.command("dump-schema", help="dump json schema")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
 @click.option("--extension", multiple=True)
-@click.option("--format", default="yaml", type=click.Choice(["yaml", "json", "python"]))
+@click.option("--format", default="yaml", type=click.Choice(["yaml", "json", "python", "pprint"]))
 def dump_schema(driver, extension, format):
     drvcls = loadmodules(driver, extension)
     if format == "yaml":
@@ -636,6 +662,8 @@ def dump_schema(driver, extension, format):
         json.dump(drvcls.schema, fp=sys.stdout, ensure_ascii=False)
     elif format == "python":
         print(drvcls.schema)
+    elif format == "pprint":
+        pprint.pprint(drvcls.schema)
     else:
         raise Exception("unknown format: %s" % (format))
 
@@ -647,9 +675,15 @@ def dump_schema(driver, extension, format):
 def validate(driver, extension, input):
     drvcls = loadmodules(driver, extension)
     prog = yaml.load(input)
-    print("validating...")
-    jsonschema.validate(prog, drvcls.schema)
-    print("OK")
+    try:
+        click.echo("validating...", nl=False)
+        jsonschema.validate(prog, drvcls.schema)
+        click.echo("OK")
+        sys.exit(0)
+    except jsonschema.exceptions.ValidationError as e:
+        click.echo("failed")
+        click.echo(e)
+    sys.exit(1)
 
 
 if __name__ == "__main__":
