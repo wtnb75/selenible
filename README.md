@@ -18,11 +18,13 @@ do selenium like ansible
 - pip install -r requirements.txt
 
 ```
-# python -m selenible.base --help
-Usage: selenible [OPTIONS] COMMAND [ARGS]...
+Usage: base.py [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  --help  Show this message and exit.
+  --version          Show the version and exit.
+  --verbose
+  --quiet, --silent
+  --help             Show this message and exit.
 
 Commands:
   dump-schema   dump json schema
