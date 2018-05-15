@@ -1,0 +1,19 @@
+- name: define func1
+  defun:
+    name: func1
+    args: [a1, a2]
+    return: r
+    progn:
+      - name: hello
+        echo: "{{a1}} is {{a2}}"
+      - name: set-retval
+        var:
+          r: "hello"
+          blabla: 1234
+- name: call func1
+  func1:
+    a1: xyz
+    a2: abc
+  register: rval1
+- name: return value
+  echo: "rval1={{rval1}}, r={{r}}(empty), blabla={{blabla}}(empty)"
