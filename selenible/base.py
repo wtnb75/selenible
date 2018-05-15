@@ -8,9 +8,11 @@ import time
 import functools
 import tempfile
 import getpass
+import copy
 import pprint
 import urllib.parse
 from logging import getLogger, basicConfig, DEBUG, INFO, WARN, captureWarnings
+from logging import FileHandler, StreamHandler, Formatter
 
 import json
 import yaml
@@ -34,12 +36,14 @@ class Base:
 
     def __init__(self, driver):
         self.step = False
+        self.save_every = False
         self.driver = driver
         self.variables = {
             "driver": driver.name,
             "desired_capabilities": driver.desired_capabilities,
             "selenible_version": VERSION,
         }
+        self.funcs = {}
         self.log = getLogger(self.__class__.__name__)
         self.log.info("driver started")
 
@@ -110,7 +114,7 @@ class Base:
             self.log.debug("cmd %s", cmd)
             self.run1(cmd)
             if self.step:
-                ans = input("step(q=exit, s=screenshot, other=continue):")
+                ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
                     break
                 elif ans == "s":
@@ -119,6 +123,10 @@ class Base:
                     img = Image.open(tf.name)
                     img.show()
                     tf.close()
+                elif ans == "c":
+                    self.step = False
+            if self.save_every:
+                self.do_screenshot({})
 
     def run1(self, cmd):
         withitem = self.render_dict(cmd.pop("with_items", None))
@@ -194,7 +202,52 @@ class Base:
                 mtd = getattr(self, mtdname2)
                 param = cmd.get(c)
                 self.log.debug("%s %s %s", name, c, param)
-                res = mtd(param)
+                res = mtd(c, param)
+                if register is not None:
+                    self.log.debug("register %s = %s", register, res)
+                    self.variables[register] = res
+
+    def do2_defun(self, funcname, params):
+        """
+        - name: define func1
+          defun:
+            name: func1
+            args: [a1, a2]
+            return: r
+            progn:
+              - name: hello
+                echo: "{{a1}} is {{a2}}"
+              - name: set-retval
+                var:
+                  r: "hello"
+        - name: call func1
+          func1:
+            a1: xyz
+            a2: abc
+          register: rval1
+        - name: return value
+          echo: "{{rval1}}"
+        """
+        funcname = params.get("name")
+        args = params.get("args", [])
+        retvar = params.get("return", None)
+        progn = params.get("progn", [])
+        self.funcs[funcname] = (args, retvar, progn)
+        setattr(self, "do2_" + funcname, self.run_func)
+
+    def run_func(self, funcname, params):
+        param = self.render_dict(params)
+        args, retvar, progn = self.funcs.get(funcname, ([], [], None))
+        oldvars = self.variables
+        self.variables = copy.deepcopy(self.variables)
+        for a in args:
+            self.variables[a] = params.get(a)
+        self.log.debug("running %s", progn)
+        self.run(progn)
+        newvars = self.variables
+        self.variables = oldvars
+        self.log.debug("return val %s -> %s", retvar, newvars.get(retvar))
+        return newvars.get(retvar)
 
     @classmethod
     def listmodule(cls):
@@ -447,6 +500,38 @@ class Base:
         return etree.fromstring(elem.get_attribute("outerHTML"))
 
 
+class Dummy(Base):
+    def __init__(self, driver=None):
+        class dummydriver:
+            name = "dummy"
+            desired_capabilities = {}
+            current_url = "http://example.com"
+            page_source = "source string"
+            title = "title string"
+            window_handles = []
+            session_id = "dummy"
+            current_window_handle = None
+            capabilities = None
+            log_types = []
+            w3c = False
+
+            def get_cookies(self):
+                return {}
+
+            def get_window_size(self):
+                return 0, 0
+
+            def get_window_position(self):
+                return 0, 0
+
+            def close(self):
+                pass
+
+            def quit(self):
+                pass
+        super().__init__(dummydriver())
+
+
 class Phantom(Base):
     def __init__(self, driver=None):
         if driver is None:
@@ -564,31 +649,34 @@ drvmap = {
     "safari": Safari,
     "edge": Edge,
     "webkit": WebKitGTK,
+    "dummy": Dummy,
 }
-
-
-def set_verbose(ctx, param, value):
-    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
-    if not value or ctx.resilient_parsing:
-        basicConfig(format=logfmt, level=INFO)
-        return
-    basicConfig(format=logfmt, level=DEBUG)
-
-
-def set_quiet(ctx, param, value):
-    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
-    if not value or ctx.resilient_parsing:
-        basicConfig(format=logfmt, level=INFO)
-        return
-    basicConfig(format=logfmt, level=WARN)
 
 
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.version_option(version=VERSION, prog_name="selenible")
-@click.option("--verbose", is_flag=True, callback=set_verbose, expose_value=False, is_eager=True)
-@click.option("--quiet", "--silent", is_flag=True, callback=set_quiet, expose_value=False, is_eager=True)
-def cli(ctx):
+@click.option("--verbose", is_flag=True)
+@click.option("--quiet", is_flag=True)
+@click.option("--logfile", type=click.Path())
+def cli(ctx, verbose, quiet, logfile):
+    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
+    fmt = Formatter(fmt=logfmt)
+    l = getLogger()
+    if verbose:
+        l.setLevel(DEBUG)
+    elif quiet:
+        l.setLevel(WARN)
+    else:
+        l.setLevel(INFO)
+    if logfile is not None:
+        newhdl = FileHandler(logfile)
+        newhdl.setFormatter(fmt)
+        l.addHandler(newhdl)
+    else:
+        newhdl = StreamHandler()
+        newhdl.setFormatter(fmt)
+        l.addHandler(newhdl)
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
 
@@ -607,12 +695,13 @@ def loadmodules(driver, extension):
 
 @cli.command(help="run playbook")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--step", is_flag=True, default=False)
-@click.option("-e", multiple=True)
 @click.option("--extension", multiple=True)
+@click.option("--step", is_flag=True, default=False)
+@click.option("--screenshot", is_flag=True, default=False)
+@click.option("-e", multiple=True)
 @click.option("--var", type=click.File('r'), required=False)
 @click.argument("input", type=click.File('r'), required=False)
-def run(input, driver, step, var, e, extension):
+def run(input, driver, step, screenshot, var, e, extension):
     captureWarnings(True)
     drvcls = loadmodules(driver, extension)
     if input is not None:
@@ -623,12 +712,16 @@ def run(input, driver, step, var, e, extension):
         if var is not None:
             b.load_vars(var)
         for x in e:
-            k, v = x.split("=", 1)
-            try:
-                b.variables[k] = json.loads(v)
-            except Exception:
-                b.variables[k] = v
+            if x.find("=") == -1:
+                b.variables[k] = True
+            else:
+                k, v = x.split("=", 1)
+                try:
+                    b.variables[k] = json.loads(v)
+                except Exception:
+                    b.variables[k] = v
         b.step = step
+        b.save_every = screenshot
         b.run(prog)
     else:
         click.echo("show usage: --help")
