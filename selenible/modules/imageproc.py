@@ -1,5 +1,7 @@
 import os
-from PIL import Image, ImageChops, ImageFilter, ImageEnhance
+import time
+import math
+from PIL import Image, ImageChops, ImageFilter, ImageEnhance, ImageFont, ImageDraw, ImageColor
 
 
 def inout_fname(param):
@@ -19,7 +21,7 @@ def Base_image_crop(self, param):
         filename = param.get("prefix", "")
         filename += time.strftime("%Y%m%d_%H%M%S", time.localtime(ts))
         filename += "_%03d.png" % (msec)
-        self.log.debug("filename generated %s", output)
+        self.log.debug("filename generated %s", filename)
     size = param.get("size", "auto")
     if size == "auto":
         img = Image.open(input_filename)
@@ -51,6 +53,7 @@ def Base_image_optimize(self, param):
     else:
         cmd = [command, "-o9", filename]
     sout = self.runcmd(cmd)
+    self.log.debug("result: %s", sout)
     after = os.stat(filename)
     self.log.info("%s: before=%d, after=%d, reduce %d bytes (%.1f %%)", filename,
                   before.st_size, after.st_size, before.st_size - after.st_size,
@@ -79,10 +82,10 @@ def Base_image_writetext(self, param):
     fontname = param.get("font")
     fontsize = param.get("size", 10)
     color = param.get("color", "red")
-    if font is None:
+    if fontname is None:
         font = ImageFont.load_default()
     else:
-        font = ImageFont.truetype(fontname, size=size)
+        font = ImageFont.truetype(fontname, size=fontsize)
     img = Image.open(input_filename)
     draw = ImageDraw.Draw(img)
     fillcolor = ImageColor.getcolor(color)

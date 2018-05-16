@@ -11,7 +11,7 @@ import getpass
 import copy
 import pprint
 import urllib.parse
-from logging import getLogger, basicConfig, DEBUG, INFO, WARN, captureWarnings
+from logging import getLogger, DEBUG, INFO, WARN, captureWarnings
 from logging import FileHandler, StreamHandler, Formatter
 
 import json
@@ -236,7 +236,7 @@ class Base:
         setattr(self, "do2_" + funcname, self.run_func)
 
     def run_func(self, funcname, params):
-        param = self.render_dict(params)
+        params = self.render_dict(params)
         args, retvar, progn = self.funcs.get(funcname, ([], [], None))
         oldvars = self.variables
         self.variables = copy.deepcopy(self.variables)
@@ -684,21 +684,21 @@ drvmap = {
 def cli(ctx, verbose, quiet, logfile):
     logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
     fmt = Formatter(fmt=logfmt)
-    l = getLogger()
+    lg = getLogger()
     if verbose:
-        l.setLevel(DEBUG)
+        lg.setLevel(DEBUG)
     elif quiet:
-        l.setLevel(WARN)
+        lg.setLevel(WARN)
     else:
-        l.setLevel(INFO)
+        lg.setLevel(INFO)
     if logfile is not None:
         newhdl = FileHandler(logfile)
         newhdl.setFormatter(fmt)
-        l.addHandler(newhdl)
+        lg.addHandler(newhdl)
     else:
         newhdl = StreamHandler()
         newhdl.setFormatter(fmt)
-        l.addHandler(newhdl)
+        lg.addHandler(newhdl)
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
 
