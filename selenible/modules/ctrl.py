@@ -43,6 +43,23 @@ def Base_var(self, param):
     self.variables.update(param)
 
 
+var_if_not_schema = var_schema
+
+
+def Base_var_if_not(self, param):
+    """
+    - name: set variables
+      var_if_not:
+        key1: value1
+        key2:
+         - value2.1
+         - value2.2
+    """
+    for k, v in param.items():
+        if k not in self.variables:
+            self.variables[k] = v
+
+
 var_from_schema = yaml.load("""
 type: object
 properties:
@@ -62,13 +79,35 @@ def Base_var_from(self, param):
     """
     if "yaml" in param:
         with open(param.get("yaml")) as f:
-            self.variables.update(yaml.load(f))
+            self.do_var(yaml.load(f))
     if "json" in param:
         with open(param.get("json")) as f:
-            self.variables.update(json.load(f))
+            self.do_var(json.load(f))
     if "toml" in param:
         with open(param.get("toml")) as f:
-            self.variables.update(toml.load(f))
+            self.do_var(toml.load(f))
+
+
+var_from_if_not_schema = var_from_schema
+
+
+def Base_var_from_if_not(self, param):
+    """
+    - name: set variables from file
+      var_from_if_not:
+        yaml: filename
+        json: filename
+        toml: filename
+    """
+    if "yaml" in param:
+        with open(param.get("yaml")) as f:
+            self.do_var_if_not(yaml.load(f))
+    if "json" in param:
+        with open(param.get("json")) as f:
+            self.do_var_if_not(json.load(f))
+    if "toml" in param:
+        with open(param.get("toml")) as f:
+            self.do_var_if_not(toml.load(f))
 
 
 def Base_runcmd(self, param):

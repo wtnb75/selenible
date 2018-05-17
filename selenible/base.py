@@ -56,7 +56,7 @@ class Base:
     @classmethod
     def load_modules(cls, modname):
         log = getLogger(cls.__name__)
-        log.info("load module %s", modname)
+        log.debug("load module %s", modname)
         pfx = cls.__name__ + "_"
         try:
             mm = modname.rsplit(".", 1)
@@ -89,7 +89,7 @@ class Base:
             else:
                 log.warn("%s is not callable", fn)
         if len(mtd) != 0:
-            log.info("register methods: %s", "/".join(mtd))
+            log.debug("register methods: %s", "/".join(mtd))
 
     def load_vars(self, fp):
         self.variables.update(yaml.load(fp))
@@ -704,10 +704,9 @@ def cli(ctx, verbose, quiet, logfile):
 
 
 def loadmodules(driver, extension):
-    Base.load_modules("ctrl")
-    Base.load_modules("browser")
-    Base.load_modules("content")
-    Base.load_modules("imageproc")
+    def_modules = ["ctrl", "browser", "content", "imageproc"]
+    for i in def_modules:
+        Base.load_modules(i)
     for ext in extension:
         Base.load_modules(ext)
     drvcls = drvmap.get(driver, Phantom)
@@ -801,6 +800,24 @@ def validate(driver, extension, input):
         click.echo("failed")
         click.echo(e)
     sys.exit(1)
+
+
+@cli.command("list-missing-schema", help="list missing json schema")
+@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
+@click.option("--extension", multiple=True)
+def list_missing_schema(driver, extension):
+    drvcls = loadmodules(driver, extension)
+    props = drvcls.schema.get("items", {}).get("properties", {})
+    mods = drvcls.listmodule()
+    ignore = ["name", "register", "when", "when_not", "with_items"]
+    for k in sorted(mods.keys()):
+        if k not in props:
+            click.echo("missing schema: %s" % (k,))
+    for k in sorted(props.keys()):
+        if k in ignore:
+            continue
+        if k not in mods:
+            click.echo("missing method: %s" % (k,))
 
 
 if __name__ == "__main__":
