@@ -183,7 +183,9 @@ def Base_sleep(self, param):
     - name: wait 10 sec
       sleep: 10
     """
+    self.lock.release()
     time.sleep(int(param))
+    self.lock.acquire()
 
 
 include_schema = yaml.load("""
