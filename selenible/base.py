@@ -20,6 +20,7 @@ import toml
 import click
 import jsonpath_rw
 import jsonschema
+from threading import Lock
 from pkg_resources import resource_stream
 from lxml import etree
 from PIL import Image, ImageChops
@@ -35,6 +36,7 @@ class Base:
     schema = yaml.load(resource_stream(__name__, 'schema/base.yaml'))
 
     def __init__(self, driver):
+        self.lock = Lock()
         self.step = False
         self.save_every = False
         self.driver = driver
@@ -112,7 +114,8 @@ class Base:
     def run(self, prog):
         for cmd in prog:
             self.log.debug("cmd %s", cmd)
-            self.run1(cmd)
+            with self.lock:
+                self.run1(cmd)
             if self.step:
                 ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
