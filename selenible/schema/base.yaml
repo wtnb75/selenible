@@ -50,6 +50,11 @@ definitions:
         - type: boolean
         - type: object
         # TBD
+    inout:
+      type: object
+      properties:
+        input: {type: string}
+        output: {type: string}
 type: array
 items:
   type: object

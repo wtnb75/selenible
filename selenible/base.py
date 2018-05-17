@@ -11,7 +11,7 @@ import getpass
 import copy
 import pprint
 import urllib.parse
-from logging import getLogger, basicConfig, DEBUG, INFO, WARN, captureWarnings
+from logging import getLogger, DEBUG, INFO, WARN, captureWarnings
 from logging import FileHandler, StreamHandler, Formatter
 
 import json
@@ -236,7 +236,7 @@ class Base:
         setattr(self, "do2_" + funcname, self.run_func)
 
     def run_func(self, funcname, params):
-        param = self.render_dict(params)
+        params = self.render_dict(params)
         args, retvar, progn = self.funcs.get(funcname, ([], [], None))
         oldvars = self.variables
         self.variables = copy.deepcopy(self.variables)
@@ -267,8 +267,14 @@ class Base:
 
     def runcmd(self, cmd, encoding="utf-8", stdin=subprocess.DEVNULL,
                stderr=subprocess.DEVNULL):
-        return subprocess.check_output(cmd, stdin=stdin, stderr=stderr,
-                                       shell=True).decode(encoding)
+        flag = False
+        if isinstance(cmd, str):
+            flag = True
+        self.log.debug("run(%s) %s", flag, cmd)
+        ret = subprocess.check_output(cmd, stdin=stdin, stderr=stderr,
+                                      shell=flag).decode(encoding)
+        self.log.debug("result: %s", ret)
+        return ret
 
     def saveshot(self, output_fn):
         self.driver.save_screenshot(output_fn)
@@ -349,6 +355,18 @@ class Base:
         "class": By.CLASS_NAME,
         "select": By.CSS_SELECTOR,
     }
+
+    def removelocator(self, param):
+        res = copy.deepcopy(param)
+        res.pop("nth", None)
+        for k, v in self.findmap.items():
+            res.pop(k, None)
+        for v in filter(lambda f: not f.startswith("_"), dir(By)):
+            res.pop(v, None)
+            res.pop(v.lower(), None)
+            if getattr(By, v) in res:
+                res.pop(getattr(By, v), None)
+        return res
 
     def getlocator(self, param):
         for k, v in self.findmap.items():
@@ -537,12 +555,13 @@ class Phantom(Base):
         if driver is None:
             driver = webdriver.PhantomJS()
         super().__init__(driver)
-        self.driver.command_executor._commands['executePhantomScript'] = (
-            'POST', '/session/$sessionId/phantom/execute')
+        # self.driver.command_executor._commands['executePhantomScript'] = (
+        #     'POST', '/session/$sessionId/phantom/execute')
 
     def execute(self, script, args):
-        self.driver.execute('executePhantomScript',
-                            {'script': script, 'args': args})
+        # self.driver.execute('executePhantomScript',
+        #                     {'script': script, 'args': args})
+        self.driver.execute_script(script, args)
 
     def do_config(self, param):
         """
@@ -613,6 +632,9 @@ class Chrome(Base):
             driver = webdriver.Chrome()
         super().__init__(driver)
 
+    def execute(self, script, args):
+        self.driver.execute_script(script, args)
+
 
 class Firefox(Base):
     def __init__(self, driver=None):
@@ -662,21 +684,21 @@ drvmap = {
 def cli(ctx, verbose, quiet, logfile):
     logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
     fmt = Formatter(fmt=logfmt)
-    l = getLogger()
+    lg = getLogger()
     if verbose:
-        l.setLevel(DEBUG)
+        lg.setLevel(DEBUG)
     elif quiet:
-        l.setLevel(WARN)
+        lg.setLevel(WARN)
     else:
-        l.setLevel(INFO)
+        lg.setLevel(INFO)
     if logfile is not None:
         newhdl = FileHandler(logfile)
         newhdl.setFormatter(fmt)
-        l.addHandler(newhdl)
+        lg.addHandler(newhdl)
     else:
         newhdl = StreamHandler()
         newhdl.setFormatter(fmt)
-        l.addHandler(newhdl)
+        lg.addHandler(newhdl)
     if ctx.invoked_subcommand is None:
         print(ctx.get_help())
 
@@ -684,6 +706,8 @@ def cli(ctx, verbose, quiet, logfile):
 def loadmodules(driver, extension):
     Base.load_modules("ctrl")
     Base.load_modules("browser")
+    Base.load_modules("content")
+    Base.load_modules("imageproc")
     for ext in extension:
         Base.load_modules(ext)
     drvcls = drvmap.get(driver, Phantom)

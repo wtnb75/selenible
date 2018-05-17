@@ -187,10 +187,13 @@ def Base_config(self, param):
           height: 480
     """
     if "wait" in param:
+        self.log.debug("implicitly wait %s sec", param.get("wait"))
         self.driver.implicitly_wait(param.get("wait"))
     if "cookie" in param:
+        self.log.debug("cookie update: %s" % (param.get("cookie", {}).keys()))
         self.driver.add_cookie(param.get("cookie"))
     if "window" in param:
+        self.log.info("window size update: %s" % (param.get("window", {})))
         win = param.get("window")
         if win.get("maximize", False):
             self.driver.maximize_window()
@@ -199,12 +202,12 @@ def Base_config(self, param):
             y = win.get("y")
             if x is not None and y is not None:
                 self.log.debug("set window pos: x=%d, y=%d", x, y)
-                self.driver.set_window_size(x, y)
+                self.driver.set_window_position(x, y)
             width = win.get("width")
             height = win.get("height")
             if width is not None and height is not None:
                 self.log.debug("set window size: width=%d, height=%d", width, height)
-                self.driver.set_window_position(width, height)
+                self.driver.set_window_size(width, height)
     if "log" in param:
         logconf = param.get("log")
         if isinstance(logconf, str):
