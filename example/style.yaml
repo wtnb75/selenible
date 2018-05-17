@@ -1,0 +1,29 @@
+- name: config
+  config:
+    window:
+      width: 1024
+      height: 768
+- name: open blog
+  open: https://wtnb.mydns.jp/wordpress/
+- name: update content
+  update_content:
+    class: entry-title
+    pattern: "[あ-ん]"
+    replacement: ""
+    regexp: true
+    flag: g
+- name: shot1
+  screenshot: output1.png
+- name: update style
+  update_style:
+    class: entry-title
+    #"background-color": "red"
+    background: "linear-gradient(transparent 60%, #ffff66 60%)"
+- name: shot2
+  screenshot: output2.png
+- name: update style
+  update_style:
+    class: entry-title
+    display: none
+- name: shot3
+  screenshot: output3.png

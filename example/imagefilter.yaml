@@ -1,0 +1,25 @@
+- name: image filter
+  image_filter:
+    input: input.png
+    output: output_blur.png
+    filter:
+      - ModeFilter: 12
+      - GaussianBlur: 5
+      - ModeFilter: 12
+      - GaussianBlur: 1
+- name: gray
+  image_convert:
+    input: input.png
+    output: output_gray.png
+    mode: L
+- name: enhance
+  image_enhance:
+    input: input.png
+    output: output_enhance.png
+    filter:
+      - Sharpness: 1.5
+      - Brightness: 1.5
+- name: optimize
+  image_optimize:
+    input: input.png
+    output: output_optimize.png
