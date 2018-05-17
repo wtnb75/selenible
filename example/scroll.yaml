@@ -1,0 +1,8 @@
+- name: open gh
+  open: https://github.com/wtnb75/selenible
+- name: scroll 100
+  scroll:
+    relative: [0, 100]
+- name: scroll bottom
+  scroll:
+    position: bottom

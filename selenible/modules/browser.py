@@ -93,7 +93,7 @@ def Base_screenshot(self, param):
             output += "_%03d.png" % (msec)
             self.log.debug("filename generated %s", output)
         self.saveshot(output)
-        elem = self.findone(param)
+        elem = self.findmany2one(param)
         if elem is not None:
             x1 = elem.location['x']
             y1 = elem.location['y']
@@ -541,3 +541,74 @@ def Base_select(self, param):
     else:
         return
     return self.return_element(param, res)
+
+
+scroll_schema = yaml.load("""
+oneOf:
+  - "$ref": "#/definitions/common/locator"
+  - type: object
+    properties:
+      relative:
+        type: array
+        items: {type: integer}
+      absolute:
+        type: array
+        items: {type: integer}
+      percent:
+        type: array
+        items: {type: number}
+      position:
+        type: string
+        enum: [top, bottom, right, left, topright, topleft, bottomright, bottomleft]
+""")
+
+
+def scrollto(fn, x, y):
+    return "window.%s(%s,%s)" % (fn, x, y)
+
+
+def Base_scroll(self, param):
+    """
+    - name: scroll down 100 pixel
+      scroll:
+        relative: [0, 100]
+    - name: scroll to pixel
+      scroll:
+        absolute: [0, 100]
+    - name: scroll to percent
+      scroll:
+        percent: [0, 50]
+    - name: scroll to position
+      scroll:
+        position: bottom
+    - name: scroll to element
+      scroll:
+        id: element1
+    """
+    xmax, ymax = "document.body.scrollWidth", "document.body.scrollHeight"
+
+    relative = param.get("relative")
+    if relative is not None and isinstance(relative, (tuple, list)) and len(relative) == 2:
+        self.driver.execute_script(scrollto("scrollBy", relative[0], relative[1]))
+    absolute = param.get("absolute")
+    if absolute is not None and isinstance(absolute, (tuple, list)) and len(absolute) == 2:
+        self.driver.execute_script(scrollto("scrollTo", absolute[0], absolute[1]))
+    percent = param.get("percent")
+    if percent is not None and isinstance(percent, (tuple, list)) and len(percent) == 2:
+        self.driver.execute_script(scrollto("scrollTo",
+                                            "%s*%f" % (xmax, percent[0] / 100.0),
+                                            "%s*%f" % (ymax, percent[1] / 100.0)))
+    pos = param.get("position")
+    if pos in ("bottom", "bottomleft"):
+        self.driver.execute_script(scrollto("scrollTo", 0, ymax))
+    elif pos in ("right", "topright"):
+        self.driver.execute_script(scrollto("scrollTo", xmax, 0))
+    elif pos in ("bottomright",):
+        self.driver.execute_script(scrollto("scrollTo", xmax, ymax))
+    elif pos in ("top", "topleft", "left"):
+        self.driver.execute_script(scrollto("scrollTo", 0, 0))
+    locator = self.getlocator(param)
+    if locator[0] is not None:
+        elem = self.findmany2one(param)
+        if elem is not None:
+            self.driver.execute_script("arguments[0].scrollIntoView();", elem)
