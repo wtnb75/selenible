@@ -25,7 +25,9 @@ def Base_progn(self, param):
       - name: debug2
         echo: good-bye world
     """
+    self.lock.release()
     self.run(param)
+    self.lock.acquire()
 
 
 var_schema = {"type": "object"}
@@ -181,7 +183,9 @@ def Base_sleep(self, param):
     - name: wait 10 sec
       sleep: 10
     """
+    self.lock.release()
     time.sleep(int(param))
+    self.lock.acquire()
 
 
 include_schema = yaml.load("""
@@ -205,11 +209,15 @@ def Base_include(self, param):
         for fname in param:
             self.log.info("loading %s", fname)
             with open(fname) as f:
+                self.lock.release()
                 self.run(yaml.load(f))
+                self.lock.acquire()
     elif isinstance(param, str):
         self.log.info("loading %s", param)
         with open(param) as f:
+            self.lock.release()
             self.run(yaml.load(f))
+            self.lock.acquire()
     else:
         raise Exception("cannot load: %s" % (param))
 

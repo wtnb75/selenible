@@ -544,7 +544,7 @@ def Base_select(self, param):
 
 
 scroll_schema = yaml.load("""
-oneOf:
+anyOf:
   - "$ref": "#/definitions/common/locator"
   - type: object
     properties:
