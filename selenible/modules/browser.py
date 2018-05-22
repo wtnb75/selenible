@@ -612,3 +612,11 @@ def Base_scroll(self, param):
         elem = self.findmany2one(param)
         if elem is not None:
             self.driver.execute_script("arguments[0].scrollIntoView();", elem)
+
+
+def Base_shutdown(self, params):
+    """
+    - name: shutdown webdriver
+      shutdown: null
+    """
+    self.shutdown_driver()
