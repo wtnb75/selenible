@@ -62,6 +62,14 @@ items:
     name: {type: string}
     when: {"$ref": "#/definitions/common/condition"}
     when_not: {"$ref": "#/definitions/common/condition"}
-    with_items: {type: array}
+    with_items:
+      oneOf:
+        - type: array
+        - type: object
+          properties:
+            range:
+              oneOf:
+                - type: array
+                - type: integer
     register: {type: string}
   required: [name]

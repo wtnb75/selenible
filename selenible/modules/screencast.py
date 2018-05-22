@@ -40,10 +40,10 @@ class screencast(threading.Thread):
                 time.sleep(self.interval - td)
         self.finished_ts = time.time()
 
-    def savefile(self, output_fn, optimize=False, loop=0):
+    def savefile(self, output_fn, optimize=False, loop=0, speed=1.0):
         if len(self.frames) == 0:
             raise Exception("no image found")
-        d = 1000 * (self.finished_ts - self.start_ts) / len(self.frames)
+        d = 1000 * (self.finished_ts - self.start_ts) / len(self.frames) / speed
         self.log.info("%d frames, %d sec. duration=%f(ms)", len(
             self.frames), self.finished_ts - self.start_ts, d)
         self.frames[0].save(output_fn, save_all=True, duration=d, optimize=optimize,
@@ -58,7 +58,7 @@ def Base_screencast(self, param):
     - name: start screencast
       screencast:
         interval: 0.5
-        thumbnail: (100, 100)
+        thumbnail: [100, 100]
     - name: sleep
       sleep: 3
     - name: save screencast
@@ -90,6 +90,7 @@ def Base_screencast(self, param):
         self.log.info("save to %s", output)
         scr_th.savefile(output,
                         optimize=param.get("optimize", False),
-                        loop=param.get("loop", 0))
+                        loop=param.get("loop", 0),
+                        speed=param.get("speed", 1.0))
     scr_th = None
     return "finished"

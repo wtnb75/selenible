@@ -10,7 +10,6 @@ import tempfile
 import getpass
 import copy
 import pprint
-import urllib.parse
 from logging import getLogger, DEBUG, INFO, WARN, captureWarnings
 from logging import FileHandler, StreamHandler, Formatter
 
@@ -31,29 +30,40 @@ from .version import VERSION
 
 
 class Base:
-    driver = None
     passcmd = "pass"
     schema = yaml.load(resource_stream(__name__, 'schema/base.yaml'))
 
-    def __init__(self, driver):
+    def __init__(self):
         self.lock = Lock()
         self.step = False
         self.save_every = False
-        self.driver = driver
+        self._driver = None
         self.variables = {
-            "driver": driver.name,
-            "desired_capabilities": driver.desired_capabilities,
             "selenible_version": VERSION,
         }
         self.funcs = {}
         self.log = getLogger(self.__class__.__name__)
-        self.log.info("driver started")
+
+    @property
+    def driver(self):
+        if self._driver is None:
+            self._driver = self.boot_driver()
+            self.log.info("driver started")
+        self.variables["driver"] = self._driver.name
+        self.variables["desired_capabilities"] = self._driver.desired_capabilities
+        return self._driver
+
+    def boot_driver(self):
+        raise Exception("please implement")
+
+    def shutdown_driver(self):
+        if hasattr(self, "_driver") and self._driver is not None:
+            self._driver.close()
+            self._driver.quit()
+            self._driver = None
 
     def __del__(self):
-        if hasattr(self, "driver") and self.driver is not None:
-            self.driver.close()
-            self.driver.quit()
-            self.driver = None
+        self.shutdown_driver()
 
     @classmethod
     def load_modules(cls, modname):
@@ -138,6 +148,12 @@ class Base:
             loopvar = loopctl.get("loop_var", "item")
             loopiter = loopctl.get("loop_iter", "iter")
             start = time.time()
+            if isinstance(withitem, dict) and "range" in withitem:
+                rg = withitem.get("range")
+                if isinstance(rg, (list, tuple)):
+                    withitem = range(*rg)
+                else:
+                    withitem = range(rg)
             self.log.info("start loop: %d times", len(withitem))
             for i, j in enumerate(withitem):
                 self.variables[loopvar] = j
@@ -162,23 +178,25 @@ class Base:
         ignoreerr = self.render_dict(cmd.pop("ignore_error", False))
         if len(cmd) != 1:
             raise Exception("too many parameters: %s" % (cmd.keys()))
-        for v in ("current_url", "page_source", "title",
-                  "window_handles", "session_id", "current_window_handle",
-                  "capabilities", "log_types", "w3c"):
-            self.variables[v] = getattr(self.driver, v)
-        for v in ("cookies", "window_size", "window_position"):
-            self.variables[v] = getattr(self.driver, "get_" + v)()
-        self.variables["log"] = {}
-        for logtype in self.driver.log_types:
-            self.variables["log"][logtype] = self.driver.get_log(logtype)
-            # phantomjs case
-            try:
-                if logtype == "har":
-                    logdata = json.loads(self.variables["log"][logtype][0]["message"])
-                    self.variables["log"][logtype][0]["message"] = logdata
-            except (KeyError, IndexError, json.decoder.JSONDecodeError) as e:
-                self.log.debug("log.har.0.message does not exists or not json")
-                pass
+        if self._driver is not None:
+            # set driver related variables
+            for v in ("current_url", "page_source", "title",
+                      "window_handles", "session_id", "current_window_handle",
+                      "capabilities", "log_types", "w3c"):
+                self.variables[v] = getattr(self.driver, v)
+            for v in ("cookies", "window_size", "window_position"):
+                self.variables[v] = getattr(self.driver, "get_" + v)()
+            self.variables["log"] = {}
+            for logtype in self.driver.log_types:
+                self.variables["log"][logtype] = self.driver.get_log(logtype)
+                # phantomjs case
+                try:
+                    if logtype == "har":
+                        logdata = json.loads(self.variables["log"][logtype][0]["message"])
+                        self.variables["log"][logtype][0]["message"] = logdata
+                except (KeyError, IndexError, json.decoder.JSONDecodeError) as e:
+                    self.log.debug("log.har.0.message does not exists or not json")
+                    pass
         for c in cmd.keys():
             mtdname = "do_%s" % (c)
             mtdname2 = "do2_%s" % (c)
@@ -266,7 +284,7 @@ class Base:
         return res
 
     def execute(self, script, args):
-        raise Exception("exec js not implemented")
+        self.driver.execute_script(script, args)
 
     def runcmd(self, cmd, encoding="utf-8", stdin=subprocess.DEVNULL,
                stderr=subprocess.DEVNULL):
@@ -522,7 +540,7 @@ class Base:
 
 
 class Dummy(Base):
-    def __init__(self, driver=None):
+    def boot_driver(self):
         class dummydriver:
             name = "dummy"
             desired_capabilities = {}
@@ -550,73 +568,12 @@ class Dummy(Base):
 
             def quit(self):
                 pass
-        super().__init__(dummydriver())
+        return dummydriver()
 
 
 class Phantom(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.PhantomJS()
-        super().__init__(driver)
-        # self.driver.command_executor._commands['executePhantomScript'] = (
-        #     'POST', '/session/$sessionId/phantom/execute')
-
-    def execute(self, script, args):
-        # self.driver.execute('executePhantomScript',
-        #                     {'script': script, 'args': args})
-        self.driver.execute_script(script, args)
-
-    def do_config(self, param):
-        """
-        - name: config phantomjs
-          config:
-            cookie_flag: false
-            proxy:
-              url: http://proxy.host:8080/
-        - name: config common
-          config:
-            wait: 10
-            cookie:
-              var1: val1
-            window:
-              width: 600
-              height: 480
-        """
-        super().do_config(param)
-        if "cookie_flag" in param:
-            if param.get("cookie_flag", True):
-                self.execute("phantom.cookiesEnabled=true")
-            else:
-                self.execute("phantom.cookiesEnabled=false")
-        if "proxy" in param:
-            prox = param.get("proxy")
-            host = prox.get("host")
-            port = prox.get("port", 8080)
-            ptype = prox.get("type", "http")
-            username = prox.get("username")
-            password = prox.get("password")
-            with_page = prox.get("page", False)
-            url = prox.get("url")
-            if url is not None:
-                u = urllib.parse.urlparse(url)
-                if u.scheme in ("", b""):
-                    self.log.debug("proxy not set. pass")
-                    return
-                proxyscript = '''setProxy("{}", {}, "{}", "{}", "{}")'''.format(
-                    u.hostname, u.port, ptype, u.username, u.password)
-            elif host is None:
-                proxyscript = '''setProxy("")'''
-            elif username is not None and password is not None:
-                proxyscript = '''setProxy("{}", {}, "{}", "{}", "{}")'''.format(
-                    host, port, ptype, username, password)
-            else:
-                proxyscript = '''setProxy("{}", {}, "{}")'''.format(
-                    host, port, ptype)
-            if with_page:
-                prefix = "page"
-            else:
-                prefix = "phantom"
-            self.execute(prefix + "." + proxyscript, [])
+    def boot_driver(self):
+        return webdriver.PhantomJS()
 
     def saveshot(self, output_fn):
         base, ext = os.path.splitext(output_fn)
@@ -630,41 +587,28 @@ class Phantom(Base):
 
 
 class Chrome(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Chrome()
-        super().__init__(driver)
-
-    def execute(self, script, args):
-        self.driver.execute_script(script, args)
+    def boot_driver(self):
+        return webdriver.Chrome()
 
 
 class Firefox(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Firefox()
-        super().__init__(driver)
+    def boot_driver(self):
+        return webdriver.Firefox()
 
 
 class Safari(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Safari()
-        super().__init__(driver)
+    def boot_driver(self):
+        return webdriver.Safari()
 
 
 class WebKitGTK(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.WebKitGTK()
-        super().__init__(driver)
+    def boot_driver(self):
+        return webdriver.WebKitGTK()
 
 
 class Edge(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Edge()
-        super().__init__(driver)
+    def boot_driver(self):
+        return webdriver.Edge()
 
 
 drvmap = {
@@ -721,7 +665,7 @@ def loadmodules(driver, extension):
 
 @cli.command(help="run playbook")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
+@click.option("--extension", "-x", multiple=True)
 @click.option("--step", is_flag=True, default=False)
 @click.option("--screenshot", is_flag=True, default=False)
 @click.option("-e", multiple=True)
@@ -755,8 +699,9 @@ def run(input, driver, step, screenshot, var, e, extension):
 
 @cli.command("list-modules", help="list modules")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
-def list_modules(driver, extension):
+@click.option("--extension", "-x", multiple=True)
+@click.option("--pattern", default=None)
+def list_modules(driver, extension, pattern):
     drvcls = loadmodules(driver, extension)
     from texttable import Texttable
     table = Texttable()
@@ -765,13 +710,15 @@ def list_modules(driver, extension):
     table.header(["Module", "Description"])
     mods = drvcls.listmodule()
     for k in sorted(mods.keys()):
+        if pattern is not None and k.find(pattern) == -1:
+            continue
         table.add_row([k, mods[k]])
     print(table.draw())
 
 
 @cli.command("dump-schema", help="dump json schema")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
+@click.option("--extension", "-x", multiple=True)
 @click.option("--format", default="yaml", type=click.Choice(["yaml", "json", "python", "pprint"]))
 def dump_schema(driver, extension, format):
     drvcls = loadmodules(driver, extension)
@@ -789,7 +736,7 @@ def dump_schema(driver, extension, format):
 
 @cli.command(help="validate by json schema")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
+@click.option("--extension", "-x", multiple=True)
 @click.argument("input", type=click.File('r'), required=False)
 def validate(driver, extension, input):
     drvcls = loadmodules(driver, extension)
@@ -807,12 +754,12 @@ def validate(driver, extension, input):
 
 @cli.command("list-missing-schema", help="list missing json schema")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
+@click.option("--extension", "-x", multiple=True)
 def list_missing_schema(driver, extension):
     drvcls = loadmodules(driver, extension)
     props = drvcls.schema.get("items", {}).get("properties", {})
     mods = drvcls.listmodule()
-    ignore = ["name", "register", "when", "when_not", "with_items"]
+    ignore = ["name", "register", "when", "when_not", "with_items", "loop_control"]
     for k in sorted(mods.keys()):
         if k not in props:
             click.echo("missing schema: %s" % (k,))
