@@ -1,0 +1,9 @@
+- name: call webhook
+  webhook:
+    url: http://localhost:8080/webhook/url
+    query:
+      q: blabla
+    body:
+      hello: world
+      text: abc is xyz
+    #timeout: 1
