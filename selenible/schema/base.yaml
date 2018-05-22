@@ -71,5 +71,6 @@ items:
               oneOf:
                 - type: array
                 - type: integer
+                - type: string
     register: {type: string}
   required: [name]

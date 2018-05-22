@@ -1,6 +1,7 @@
 *.log
 *.pdf
 *.png
+*.gif
 __pycache__
 *.tar
 *.html

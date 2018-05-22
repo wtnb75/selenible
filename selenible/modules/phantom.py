@@ -1,4 +1,4 @@
-import urllib.urlparse
+import urllib.parse
 
 
 def Phantom_config(self, param):
