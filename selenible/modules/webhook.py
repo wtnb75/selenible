@@ -1,3 +1,4 @@
+import json
 import yaml
 import requests
 
@@ -30,6 +31,7 @@ def Base_webhook(self, params):
     method = params.get("method", "post")
     cookies = params.get("cookies", {})
     headers = params.get("headers", {"content-type": "application/json"})
+    timeout = params.get("timeout", None)
     sess = requests.Session()
     for name, value in cookies.items():
         sess.cookies.set(name, value)
