@@ -9,51 +9,56 @@ import functools
 import tempfile
 import getpass
 import copy
-import pprint
-import urllib.parse
-from logging import getLogger, DEBUG, INFO, WARN, captureWarnings
-from logging import FileHandler, StreamHandler, Formatter
+from logging import getLogger
 
 import json
 import yaml
 import toml
-import click
 import jsonpath_rw
-import jsonschema
 from threading import Lock
 from pkg_resources import resource_stream
 from lxml import etree
 from PIL import Image, ImageChops
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from jinja2 import Template
-from .version import VERSION
+from ..version import VERSION
 
 
 class Base:
-    driver = None
     passcmd = "pass"
-    schema = yaml.load(resource_stream(__name__, 'schema/base.yaml'))
+    schema = yaml.load(resource_stream(__name__, '../schema/base.yaml'))
 
-    def __init__(self, driver):
+    def __init__(self):
         self.lock = Lock()
         self.step = False
         self.save_every = False
-        self.driver = driver
+        self._driver = None
         self.variables = {
-            "driver": driver.name,
-            "desired_capabilities": driver.desired_capabilities,
             "selenible_version": VERSION,
         }
         self.funcs = {}
         self.log = getLogger(self.__class__.__name__)
-        self.log.info("driver started")
+
+    @property
+    def driver(self):
+        if self._driver is None:
+            self._driver = self.boot_driver()
+            self.log.info("driver started")
+        self.variables["driver"] = self._driver.name
+        self.variables["desired_capabilities"] = self._driver.desired_capabilities
+        return self._driver
+
+    def boot_driver(self):
+        raise Exception("please implement")
+
+    def shutdown_driver(self):
+        if hasattr(self, "_driver") and self._driver is not None:
+            self._driver.close()
+            self._driver.quit()
+            self._driver = None
 
     def __del__(self):
-        if hasattr(self, "driver") and self.driver is not None:
-            self.driver.close()
-            self.driver.quit()
-            self.driver = None
+        self.shutdown_driver()
 
     @classmethod
     def load_modules(cls, modname):
@@ -138,6 +143,12 @@ class Base:
             loopvar = loopctl.get("loop_var", "item")
             loopiter = loopctl.get("loop_iter", "iter")
             start = time.time()
+            if isinstance(withitem, dict) and "range" in withitem:
+                rg = withitem.get("range")
+                if isinstance(rg, (list, tuple)):
+                    withitem = range(*rg)
+                else:
+                    withitem = range(int(rg))
             self.log.info("start loop: %d times", len(withitem))
             for i, j in enumerate(withitem):
                 self.variables[loopvar] = j
@@ -162,23 +173,25 @@ class Base:
         ignoreerr = self.render_dict(cmd.pop("ignore_error", False))
         if len(cmd) != 1:
             raise Exception("too many parameters: %s" % (cmd.keys()))
-        for v in ("current_url", "page_source", "title",
-                  "window_handles", "session_id", "current_window_handle",
-                  "capabilities", "log_types", "w3c"):
-            self.variables[v] = getattr(self.driver, v)
-        for v in ("cookies", "window_size", "window_position"):
-            self.variables[v] = getattr(self.driver, "get_" + v)()
-        self.variables["log"] = {}
-        for logtype in self.driver.log_types:
-            self.variables["log"][logtype] = self.driver.get_log(logtype)
-            # phantomjs case
-            try:
-                if logtype == "har":
-                    logdata = json.loads(self.variables["log"][logtype][0]["message"])
-                    self.variables["log"][logtype][0]["message"] = logdata
-            except (KeyError, IndexError, json.decoder.JSONDecodeError) as e:
-                self.log.debug("log.har.0.message does not exists or not json")
-                pass
+        if self._driver is not None:
+            # set driver related variables
+            for v in ("current_url", "page_source", "title",
+                      "window_handles", "session_id", "current_window_handle",
+                      "capabilities", "log_types", "w3c"):
+                self.variables[v] = getattr(self.driver, v)
+            for v in ("cookies", "window_size", "window_position"):
+                self.variables[v] = getattr(self.driver, "get_" + v)()
+            self.variables["log"] = {}
+            for logtype in self.driver.log_types:
+                self.variables["log"][logtype] = self.driver.get_log(logtype)
+                # phantomjs case
+                try:
+                    if logtype == "har":
+                        logdata = json.loads(self.variables["log"][logtype][0]["message"])
+                        self.variables["log"][logtype][0]["message"] = logdata
+                except (KeyError, IndexError, json.decoder.JSONDecodeError) as e:
+                    self.log.debug("log.har.0.message does not exists or not json")
+                    pass
         for c in cmd.keys():
             mtdname = "do_%s" % (c)
             mtdname2 = "do2_%s" % (c)
@@ -266,7 +279,7 @@ class Base:
         return res
 
     def execute(self, script, args):
-        raise Exception("exec js not implemented")
+        self.driver.execute_script(script, args)
 
     def runcmd(self, cmd, encoding="utf-8", stdin=subprocess.DEVNULL,
                stderr=subprocess.DEVNULL):
@@ -519,309 +532,3 @@ class Base:
         elif isinstance(elem, str):
             return etree.fromstring(elem)
         return etree.fromstring(elem.get_attribute("outerHTML"))
-
-
-class Dummy(Base):
-    def __init__(self, driver=None):
-        class dummydriver:
-            name = "dummy"
-            desired_capabilities = {}
-            current_url = "http://example.com"
-            page_source = "source string"
-            title = "title string"
-            window_handles = []
-            session_id = "dummy"
-            current_window_handle = None
-            capabilities = None
-            log_types = []
-            w3c = False
-
-            def get_cookies(self):
-                return {}
-
-            def get_window_size(self):
-                return 0, 0
-
-            def get_window_position(self):
-                return 0, 0
-
-            def close(self):
-                pass
-
-            def quit(self):
-                pass
-        super().__init__(dummydriver())
-
-
-class Phantom(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.PhantomJS()
-        super().__init__(driver)
-        # self.driver.command_executor._commands['executePhantomScript'] = (
-        #     'POST', '/session/$sessionId/phantom/execute')
-
-    def execute(self, script, args):
-        # self.driver.execute('executePhantomScript',
-        #                     {'script': script, 'args': args})
-        self.driver.execute_script(script, args)
-
-    def do_config(self, param):
-        """
-        - name: config phantomjs
-          config:
-            cookie_flag: false
-            proxy:
-              url: http://proxy.host:8080/
-        - name: config common
-          config:
-            wait: 10
-            cookie:
-              var1: val1
-            window:
-              width: 600
-              height: 480
-        """
-        super().do_config(param)
-        if "cookie_flag" in param:
-            if param.get("cookie_flag", True):
-                self.execute("phantom.cookiesEnabled=true")
-            else:
-                self.execute("phantom.cookiesEnabled=false")
-        if "proxy" in param:
-            prox = param.get("proxy")
-            host = prox.get("host")
-            port = prox.get("port", 8080)
-            ptype = prox.get("type", "http")
-            username = prox.get("username")
-            password = prox.get("password")
-            with_page = prox.get("page", False)
-            url = prox.get("url")
-            if url is not None:
-                u = urllib.parse.urlparse(url)
-                if u.scheme in ("", b""):
-                    self.log.debug("proxy not set. pass")
-                    return
-                proxyscript = '''setProxy("{}", {}, "{}", "{}", "{}")'''.format(
-                    u.hostname, u.port, ptype, u.username, u.password)
-            elif host is None:
-                proxyscript = '''setProxy("")'''
-            elif username is not None and password is not None:
-                proxyscript = '''setProxy("{}", {}, "{}", "{}", "{}")'''.format(
-                    host, port, ptype, username, password)
-            else:
-                proxyscript = '''setProxy("{}", {}, "{}")'''.format(
-                    host, port, ptype)
-            if with_page:
-                prefix = "page"
-            else:
-                prefix = "phantom"
-            self.execute(prefix + "." + proxyscript, [])
-
-    def saveshot(self, output_fn):
-        base, ext = os.path.splitext(output_fn)
-        if ext in (".pdf", ".PDF"):
-            page_format = 'this.paperSize = {format: "A4", orientation: "portrait" };'
-            self.execute(page_format, [])
-            render = '''this.render("{}")'''.format(output_fn)
-            self.execute(render, [])
-        else:
-            super().saveshot(output_fn)
-
-
-class Chrome(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Chrome()
-        super().__init__(driver)
-
-    def execute(self, script, args):
-        self.driver.execute_script(script, args)
-
-
-class Firefox(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Firefox()
-        super().__init__(driver)
-
-
-class Safari(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Safari()
-        super().__init__(driver)
-
-
-class WebKitGTK(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.WebKitGTK()
-        super().__init__(driver)
-
-
-class Edge(Base):
-    def __init__(self, driver=None):
-        if driver is None:
-            driver = webdriver.Edge()
-        super().__init__(driver)
-
-
-drvmap = {
-    "phantom": Phantom,
-    "chrome": Chrome,
-    "firefox": Firefox,
-    "safari": Safari,
-    "edge": Edge,
-    "webkit": WebKitGTK,
-    "dummy": Dummy,
-}
-
-
-@click.group(invoke_without_command=True)
-@click.pass_context
-@click.version_option(version=VERSION, prog_name="selenible")
-@click.option("--verbose", is_flag=True)
-@click.option("--quiet", is_flag=True)
-@click.option("--logfile", type=click.Path())
-def cli(ctx, verbose, quiet, logfile):
-    logfmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
-    fmt = Formatter(fmt=logfmt)
-    lg = getLogger()
-    if verbose:
-        lg.setLevel(DEBUG)
-    elif quiet:
-        lg.setLevel(WARN)
-    else:
-        lg.setLevel(INFO)
-    if logfile is not None:
-        newhdl = FileHandler(logfile)
-        newhdl.setFormatter(fmt)
-        lg.addHandler(newhdl)
-    else:
-        newhdl = StreamHandler()
-        newhdl.setFormatter(fmt)
-        lg.addHandler(newhdl)
-    if ctx.invoked_subcommand is None:
-        print(ctx.get_help())
-
-
-def loadmodules(driver, extension):
-    def_modules = ["ctrl", "browser", "content", "imageproc"]
-    for i in def_modules:
-        Base.load_modules(i)
-    for ext in extension:
-        Base.load_modules(ext)
-    drvcls = drvmap.get(driver, Phantom)
-    drvcls.load_modules(drvcls.__name__.lower())
-    for ext in extension:
-        drvcls.load_modules(ext)
-    return drvcls
-
-
-@cli.command(help="run playbook")
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
-@click.option("--step", is_flag=True, default=False)
-@click.option("--screenshot", is_flag=True, default=False)
-@click.option("-e", multiple=True)
-@click.option("--var", type=click.File('r'), required=False)
-@click.argument("input", type=click.File('r'), required=False)
-def run(input, driver, step, screenshot, var, e, extension):
-    captureWarnings(True)
-    drvcls = loadmodules(driver, extension)
-    if input is not None:
-        prog = yaml.load(input)
-        b = drvcls()
-        for k, v in os.environ.items():
-            b.variables[k] = v
-        if var is not None:
-            b.load_vars(var)
-        for x in e:
-            if x.find("=") == -1:
-                b.variables[k] = True
-            else:
-                k, v = x.split("=", 1)
-                try:
-                    b.variables[k] = json.loads(v)
-                except Exception:
-                    b.variables[k] = v
-        b.step = step
-        b.save_every = screenshot
-        b.run(prog)
-    else:
-        click.echo("show usage: --help")
-
-
-@cli.command("list-modules", help="list modules")
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
-def list_modules(driver, extension):
-    drvcls = loadmodules(driver, extension)
-    from texttable import Texttable
-    table = Texttable()
-    table.set_cols_align(["l", "l"])
-    # table.set_deco(Texttable.HEADER)
-    table.header(["Module", "Description"])
-    mods = drvcls.listmodule()
-    for k in sorted(mods.keys()):
-        table.add_row([k, mods[k]])
-    print(table.draw())
-
-
-@cli.command("dump-schema", help="dump json schema")
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
-@click.option("--format", default="yaml", type=click.Choice(["yaml", "json", "python", "pprint"]))
-def dump_schema(driver, extension, format):
-    drvcls = loadmodules(driver, extension)
-    if format == "yaml":
-        yaml.dump(drvcls.schema, sys.stdout, default_flow_style=False)
-    elif format == "json":
-        json.dump(drvcls.schema, fp=sys.stdout, ensure_ascii=False)
-    elif format == "python":
-        print(drvcls.schema)
-    elif format == "pprint":
-        pprint.pprint(drvcls.schema)
-    else:
-        raise Exception("unknown format: %s" % (format))
-
-
-@cli.command(help="validate by json schema")
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
-@click.argument("input", type=click.File('r'), required=False)
-def validate(driver, extension, input):
-    drvcls = loadmodules(driver, extension)
-    prog = yaml.load(input)
-    try:
-        click.echo("validating...", nl=False)
-        jsonschema.validate(prog, drvcls.schema)
-        click.echo("OK")
-        sys.exit(0)
-    except jsonschema.exceptions.ValidationError as e:
-        click.echo("failed")
-        click.echo(e)
-    sys.exit(1)
-
-
-@cli.command("list-missing-schema", help="list missing json schema")
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", multiple=True)
-def list_missing_schema(driver, extension):
-    drvcls = loadmodules(driver, extension)
-    props = drvcls.schema.get("items", {}).get("properties", {})
-    mods = drvcls.listmodule()
-    ignore = ["name", "register", "when", "when_not", "with_items"]
-    for k in sorted(mods.keys()):
-        if k not in props:
-            click.echo("missing schema: %s" % (k,))
-    for k in sorted(props.keys()):
-        if k in ignore:
-            continue
-        if k not in mods:
-            click.echo("missing method: %s" % (k,))
-
-
-if __name__ == "__main__":
-    cli()

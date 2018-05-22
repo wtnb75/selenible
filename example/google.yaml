@@ -1,0 +1,34 @@
+- name: open google
+  open: https://www.google.com/
+- name: search keyword
+  var_if_not:
+    kwd: ansible
+- name: start screencast
+  screencast:
+    thumbnail: [400, 400]
+- name: input key
+  progn:
+  - name: key
+    sendKeys:
+      text: "{{kwd[iter]}}"
+      name: q
+  - name: sleep
+    sleep: 0.2
+  with_items:
+    range: "{{kwd|length}}"
+- name: sleep
+  sleep: 1
+- name: submit
+  submit:
+    name: q
+- name: scroll
+  progn:
+  - name: scroll 20
+    scroll:
+      relative: [0, 20]
+  - name: sleep
+    sleep: 0.1
+  with_items:
+    range: 50
+- name: stop screencast
+  screencast: google-ansible.gif
