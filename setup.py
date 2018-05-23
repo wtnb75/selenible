@@ -8,7 +8,7 @@ setup(
     author="Takashi WATANABE",
     author_email="wtnb75@gmail.com",
     url="https://github.com/wtnb75/selenible",
-    packages=["selenible", "selenible.modules"],
+    packages=["selenible", "selenible.modules", "selenible.drivers"],
     package_data={"selenible": ["schema/*.yaml"]},
     license="MIT",
     install_requires=open("requirements.txt").readlines(),
