@@ -9,7 +9,8 @@ import yaml
 import click
 import jsonschema
 from .version import VERSION
-from .drivers import Base, Phantom, Chrome, Firefox, Safari, Edge, WebKitGTK, Dummy, Ie, Opera
+from .drivers import Base, Phantom, Chrome, Firefox, Safari, Edge
+from .drivers import WebKitGTK, Dummy, Ie, Opera, Android, Remote
 
 drvmap = {
     "phantom": Phantom,
@@ -21,6 +22,8 @@ drvmap = {
     "dummy": Dummy,
     "ie": Ie,
     "opera": Opera,
+    "android": Android,
+    "remote": Remote,
 }
 
 
