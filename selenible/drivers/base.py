@@ -38,6 +38,7 @@ class Base:
         }
         self.funcs = {}
         self.log = getLogger(self.__class__.__name__)
+        self.browser_args = {}
 
     @property
     def driver(self):
@@ -47,6 +48,9 @@ class Base:
         self.variables["driver"] = self._driver.name
         self.variables["desired_capabilities"] = self._driver.desired_capabilities
         return self._driver
+
+    def get_options(self):
+        return {}
 
     def boot_driver(self):
         raise Exception("please implement")
@@ -222,6 +226,8 @@ class Base:
                 if register is not None:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res
+            else:
+                raise Exception("module not found: %s" % (c))
 
     def do2_defun(self, funcname, params):
         """
