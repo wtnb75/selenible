@@ -2,6 +2,6 @@ from selenium import webdriver
 from . import Base
 
 
-class Android(Base):
+class Remote(Base):
     def boot_driver(self):
-        return webdriver.Android(**self.browser_args)
+        return webdriver.Remote(**self.browser_args)

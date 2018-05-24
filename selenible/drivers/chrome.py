@@ -9,3 +9,16 @@ class Chrome(Base):
 
     def boot_driver(self):
         return webdriver.Chrome(**self.browser_args)
+
+    def do_network_conditions(self, params):
+        """
+        - name: network emulation settings
+          network_conditions:
+            latency: 4
+            download_throughput: 2
+            upload_throughput: 1
+            offline: false
+        """
+        prep = self.driver.get_network_conditions()
+        self.log.info("network emulation settings: %s -> %s", prep, params)
+        self.driver.set_network_conditions(**params)
