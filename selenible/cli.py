@@ -1,6 +1,7 @@
 import sys
 import os
 import pprint
+import inspect
 from logging import getLogger, DEBUG, INFO, WARN, captureWarnings
 from logging import FileHandler, StreamHandler, Formatter
 
@@ -9,7 +10,8 @@ import yaml
 import click
 import jsonschema
 from .version import VERSION
-from .drivers import Base, Phantom, Chrome, Firefox, Safari, Edge, WebKitGTK, Dummy
+from .drivers import Base, Phantom, Chrome, Firefox, Safari, Edge
+from .drivers import WebKitGTK, Dummy, Ie, Opera, Android, Remote
 
 drvmap = {
     "phantom": Phantom,
@@ -19,6 +21,10 @@ drvmap = {
     "edge": Edge,
     "webkit": WebKitGTK,
     "dummy": Dummy,
+    "ie": Ie,
+    "opera": Opera,
+    "android": Android,
+    "remote": Remote,
 }
 
 
@@ -168,6 +174,31 @@ def list_missing_schema(driver, extension):
             continue
         if k not in mods:
             click.echo("missing method: %s" % (k,))
+
+
+@cli.command("browser-options", help="show browser options")
+@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
+@click.option("--mode", default="example", type=click.Choice(["example", "doc"]))
+def browser_options(driver, mode):
+    drvcls = loadmodules(driver, [])
+    drv = drvcls()
+    if mode == "doc":
+        print(inspect.getdoc(drv.driver.__init__))
+        return
+    opts = drv.get_options()
+    sig = inspect.signature(drv.driver.__init__)
+    res = {}
+    for k, v in sig.parameters.items():
+        res[k] = v.default
+    if opts != {}:
+        res["options"] = {}
+        for f in dir(opts):
+            if f.startswith("__") or f.endswith("__"):
+                continue
+            if callable(getattr(opts, f)):
+                s2 = inspect.signature(getattr(opts, f))
+                res["options"][f] = [str(x) for x in s2.parameters.values()]
+    yaml.dump({"browser_setting": res}, sys.stdout, default_flow_style=False)
 
 
 if __name__ == "__main__":

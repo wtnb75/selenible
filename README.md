@@ -18,23 +18,27 @@ do selenium like ansible
 - pip install -r requirements.txt
 
 ```
-Usage: base.py [OPTIONS] COMMAND [ARGS]...
+# python -m selenible.cli
+Usage: cli.py [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  --version          Show the version and exit.
+  --version       Show the version and exit.
   --verbose
-  --quiet, --silent
-  --help             Show this message and exit.
+  --quiet
+  --logfile PATH
+  --help          Show this message and exit.
 
 Commands:
-  dump-schema   dump json schema
-  list-modules  list modules
-  run           run playbook
-  validate      validate by json schema
+  browser-options      show browser options
+  dump-schema          dump json schema
+  list-missing-schema  list missing json schema
+  list-modules         list modules
+  run                  run playbook
+  validate             validate by json schema
 ```
 
 ```
-# python -m selenible.base list-modules
+# python -m selenible.cli list-modules
 +--------------+---------------------------------------------------------------+
 |    Module    |                          Description                          |
 +==============+===============================================================+
