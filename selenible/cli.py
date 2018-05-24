@@ -178,9 +178,13 @@ def list_missing_schema(driver, extension):
 
 @cli.command("browser-options", help="show browser options")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-def browser_options(driver):
+@click.option("--mode", default="example", type=click.Choice(["example", "doc"]))
+def browser_options(driver, mode):
     drvcls = loadmodules(driver, [])
     drv = drvcls()
+    if mode == "doc":
+        print(inspect.getdoc(drv.driver.__init__))
+        return
     opts = drv.get_options()
     sig = inspect.signature(drv.driver.__init__)
     res = {}
