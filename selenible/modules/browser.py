@@ -620,3 +620,19 @@ def Base_shutdown(self, params):
       shutdown: null
     """
     self.shutdown_driver()
+
+
+def Base_browser_setting(self, params):
+    restart = params.pop("restart", False)
+    copt = params.pop("options", {})
+    self.browser_args.update(params)
+    if len(copt) != 0:
+        opt = self.get_options()
+        for k, v in copt.items():
+            if hasattr(copt, k) and callable(getattr(copt, k)):
+                getattr(copt, k)(v)
+            else:
+                raise Exception("no such option: %s" % (k))
+        self.browser_args["options"] = opt
+    if restart:
+        self.do_shutdown({})

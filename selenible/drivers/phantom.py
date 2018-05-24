@@ -1,12 +1,13 @@
 
 import os
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from . import Base
 
 
 class Phantom(Base):
     def boot_driver(self):
-        return webdriver.PhantomJS()
+        return webdriver.PhantomJS(**self.browser_args)
 
     def saveshot(self, output_fn):
         base, ext = os.path.splitext(output_fn)

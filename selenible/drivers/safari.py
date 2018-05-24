@@ -4,4 +4,4 @@ from . import Base
 
 class Safari(Base):
     def boot_driver(self):
-        return webdriver.Safari()
+        return webdriver.Safari(**self.browser_args)
