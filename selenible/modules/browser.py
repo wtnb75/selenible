@@ -629,9 +629,10 @@ def Base_browser_setting(self, params):
     if len(copt) != 0:
         opt = self.get_options()
         for k, v in copt.items():
-            if hasattr(copt, k) and callable(getattr(copt, k)):
-                getattr(copt, k)(v)
+            if hasattr(opt, k) and callable(getattr(opt, k)):
+                getattr(opt, k)(v)
             else:
+                self.log.error("no such option: %s(%s): %s", k, v, dir(opt))
                 raise Exception("no such option: %s" % (k))
         self.browser_args["options"] = opt
     if restart:

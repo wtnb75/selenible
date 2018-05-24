@@ -1,0 +1,7 @@
+- name: set log path
+  browser_setting:
+    service_log_path: /tmp/ghost.log
+- name: open google
+  open: https://www.google.com/
+- name: screenshot
+  screenshot: /tmp/output.png

@@ -6,6 +6,7 @@ from . import Base
 
 class Phantom(Base):
     def boot_driver(self):
+        self.log.debug("phantom args: %s", self.browser_args)
         return webdriver.PhantomJS(**self.browser_args)
 
     def saveshot(self, output_fn):

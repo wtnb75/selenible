@@ -8,6 +8,7 @@ class Chrome(Base):
         return Options()
 
     def boot_driver(self):
+        self.log.debug("chrome: %s", self.browser_args)
         return webdriver.Chrome(**self.browser_args)
 
     def do_network_conditions(self, params):

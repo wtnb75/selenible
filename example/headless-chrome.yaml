@@ -1,0 +1,8 @@
+- name: set headless
+  browser_setting:
+    options:
+      set_headless: true
+- name: open google
+  open: https://www.google.com/
+- name: shot
+  screenshot: /tmp/headless-shot.png
