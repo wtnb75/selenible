@@ -222,6 +222,8 @@ class Base:
                 if register is not None:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res
+            else:
+                raise Exception("module not found: %s" % (c))
 
     def do2_defun(self, funcname, params):
         """

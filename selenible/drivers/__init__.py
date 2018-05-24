@@ -6,5 +6,7 @@ from .safari import Safari
 from .webkitgtk import WebKitGTK
 from .edge import Edge
 from .firefox import Firefox
+from .ie import Ie
+from .opera import Opera
 
-__all__ = [Base, Chrome, Dummy, Phantom, Safari, WebKitGTK, Edge, Firefox]
+__all__ = [Base, Chrome, Dummy, Phantom, Safari, WebKitGTK, Edge, Firefox, Ie, Opera]
