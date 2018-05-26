@@ -1,10 +1,15 @@
 from setuptools import setup
 from selenible.version import VERSION
 
+with open("README.md") as f:
+    long_descr = f.read()
+
 setup(
     name="selenible",
     version=VERSION,
     description="selenium like ansible",
+    long_description=long_descr,
+    long_description_content_type="text/markdown",
     author="Takashi WATANABE",
     author_email="wtnb75@gmail.com",
     url="https://github.com/wtnb75/selenible",
@@ -25,5 +30,5 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     python_requires='>=3',
-    keywords="selenium web",
+    keywords="selenium web test",
 )
