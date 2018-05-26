@@ -29,12 +29,11 @@ Options:
   --help          Show this message and exit.
 
 Commands:
-  browser-options      show browser options
-  dump-schema          dump json schema
-  list-missing-schema  list missing json schema
-  list-modules         list modules
-  run                  run playbook
-  validate             validate by json schema
+  browser-options  show browser options
+  dump-schema      dump json schema
+  list-modules     list modules
+  run              run playbook
+  validate         validate by json schema
 ```
 
 ```
