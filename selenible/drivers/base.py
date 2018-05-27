@@ -142,6 +142,7 @@ class Base:
 
     def run1(self, cmd):
         withitem = self.render_dict(cmd.pop("with_items", None))
+        delay = cmd.pop("delay", 0)
         if withitem is not None:
             loopctl = self.render_dict(cmd.pop("loop_control", {}))
             loopvar = loopctl.get("loop_var", "item")
@@ -159,6 +160,7 @@ class Base:
                 self.variables[loopiter] = i
                 self.log.info("loop by %d: %s", i, j)
                 self.run1(cmd.copy())
+                time.sleep(delay)
             self.variables.pop(loopvar)
             self.variables.pop(loopiter)
             self.log.info("finish loop: %f second", time.time() - start)
@@ -177,6 +179,7 @@ class Base:
         ignoreerr = self.render_dict(cmd.pop("ignore_error", False))
         if len(cmd) != 1:
             raise Exception("too many parameters: %s" % (cmd.keys()))
+        self.variables["env"] = os.environ
         if self._driver is not None:
             # set driver related variables
             for v in ("current_url", "page_source", "title",
@@ -228,6 +231,7 @@ class Base:
                     self.variables[register] = res
             else:
                 raise Exception("module not found: %s" % (c))
+            time.sleep(delay)
 
     def do2_defun(self, funcname, params):
         """

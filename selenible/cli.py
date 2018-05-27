@@ -158,24 +158,6 @@ def validate(driver, extension, input):
     sys.exit(1)
 
 
-@cli.command("list-missing-schema", help="list missing json schema")
-@click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
-@click.option("--extension", "-x", multiple=True)
-def list_missing_schema(driver, extension):
-    drvcls = loadmodules(driver, extension)
-    props = drvcls.schema.get("items", {}).get("properties", {})
-    mods = drvcls.listmodule()
-    ignore = ["name", "register", "when", "when_not", "with_items", "loop_control"]
-    for k in sorted(mods.keys()):
-        if k not in props:
-            click.echo("missing schema: %s" % (k,))
-    for k in sorted(props.keys()):
-        if k in ignore:
-            continue
-        if k not in mods:
-            click.echo("missing method: %s" % (k,))
-
-
 @cli.command("browser-options", help="show browser options")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
 @click.option("--mode", default="example", type=click.Choice(["example", "doc"]))

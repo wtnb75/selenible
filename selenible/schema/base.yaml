@@ -73,4 +73,5 @@ items:
                 - type: integer
                 - type: string
     register: {type: string}
+    delay: {type: number}
   required: [name]
