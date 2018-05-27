@@ -1,0 +1,19 @@
+- name: get text
+  set:
+    input_multiline: "input(ctrl-d): "
+  register: src
+- name: open google translate
+  open: https://translate.google.com/
+- name: set input
+  sendKeys:
+    text: "{{src}}"
+    id: source
+- name: sleep
+  sleep: 1
+- name: get output
+  save:
+    mode: text
+    id: result_box
+  register: dst
+- name: result
+  echo: "{{dst}}"
