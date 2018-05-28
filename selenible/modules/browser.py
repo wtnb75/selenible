@@ -288,6 +288,30 @@ def Base_sendKeys(self, param):
     elem.send_keys(txt)
     return self.return_element(param, elem)
 
+setTextValue_schema = yaml.load("""
+allOf:
+  - "$ref": "#/definitions/common/locator"
+  - "$ref": "#/definitions/common/textvalue"
+""")
+
+
+def Base_setTextValue(self, param):
+    """
+    - name: input username
+      setTextValue:
+        text: |
+          multi line text1
+          multi line text2
+        id: elementid1
+    """
+    clear = param.get("clear", False)
+    txt = self.getvalue(param)
+    if txt is None:
+        raise Exception("text not set: param=%s" % (param))
+    elem = self.findmany2one(param)
+    self.driver.execute_script("arguments[0].value = arguments[1];", elem, txt)
+    return self.return_element(param, elem)
+
 
 save_schema = yaml.load("""
 allOf:

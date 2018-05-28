@@ -2,14 +2,16 @@
   set:
     input_multiline: "input(ctrl-d): "
   register: src
+  when_not:
+    defined: src
 - name: open google translate
   open: https://translate.google.com/
 - name: set input
-  sendKeys:
+  setTextValue:
     text: "{{src}}"
     id: source
 - name: sleep
-  sleep: 1
+  sleep: 3
 - name: get output
   save:
     mode: text
