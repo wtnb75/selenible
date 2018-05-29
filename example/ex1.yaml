@@ -1,7 +1,7 @@
 - name: version
   echo: "selenible version {{selenible_version}}"
-- name: ensure version 0.1
-  ensure:
+- name: assert version 0.1
+  assert:
     eq:
       - "{{selenible_version}}"
       - "0.1"
