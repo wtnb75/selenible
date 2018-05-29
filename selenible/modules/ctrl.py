@@ -271,13 +271,13 @@ def Base_config(self, param):
         self.driver.set_script_timeout(param.get("script_timeout"))
 
 
-ensure_schema = {"$ref": "#/definitions/common/condition"}
+assert_schema = {"$ref": "#/definitions/common/condition"}
 
 
-def Base_ensure(self, param):
+def Base_assert(self, param):
     """
     - name: check condition
-      ensure:
+      assert:
         eq:
           - "{{selenible_version}}"
           - "0.1"
@@ -287,13 +287,13 @@ def Base_ensure(self, param):
         raise Exception("condition failed: %s" % (param))
 
 
-ensure_not_schema = ensure_schema
+assert_not_schema = assert_schema
 
 
-def Base_ensure_not(self, param):
+def Base_assert_not(self, param):
     """
     - name: check condition
-      ensure_not:
+      assert_not:
         eq:
           - "{{selenible_version}}"
           - "0.3"
