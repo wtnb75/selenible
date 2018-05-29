@@ -10,3 +10,5 @@ dist/
 build/
 *.sh
 _book
+*.ipynb
+.ipynb_checkpoints

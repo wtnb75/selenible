@@ -43,6 +43,7 @@ def Base_open(self, param):
             url += "?"
             url += qstr
         self.driver.get(url)
+    return self.driver.current_url
 
 
 screenshot_schema = yaml.load("""
@@ -82,6 +83,7 @@ def Base_screenshot(self, param):
     self.log.debug("screenshot %s", param)
     if isinstance(param, str):
         self.saveshot(param)
+        return param
     elif isinstance(param, dict):
         output = param.get("output")
         if output is None:
@@ -108,6 +110,7 @@ def Base_screenshot(self, param):
             self.optimizeimg(output)
         if param.get("archive", False):
             self.archiveimg(output, param.get("archive"))
+        return output
 
 
 click_schema = {"$ref": "#/definitions/common/locator"}
@@ -288,6 +291,7 @@ def Base_sendKeys(self, param):
     elem.send_keys(txt)
     return self.return_element(param, elem)
 
+
 setTextValue_schema = yaml.load("""
 allOf:
   - "$ref": "#/definitions/common/locator"
@@ -304,7 +308,6 @@ def Base_setTextValue(self, param):
           multi line text2
         id: elementid1
     """
-    clear = param.get("clear", False)
     txt = self.getvalue(param)
     if txt is None:
         raise Exception("text not set: param=%s" % (param))

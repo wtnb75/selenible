@@ -79,7 +79,7 @@ class Base:
                 modlast = mm[1]
             mod1 = __import__(modfirst, globals(), locals(), [modlast], 0)
             mod = getattr(mod1, modlast)
-        except AttributeError as e:
+        except AttributeError:
             log.debug("cannot import %s from %s", modlast, modfirst)
             return
         log.debug("names: %s", dir(mod))
@@ -121,10 +121,11 @@ class Base:
         return d
 
     def run(self, prog):
+        res = None
         for cmd in prog:
             self.log.debug("cmd %s", cmd)
             with self.lock:
-                self.run1(cmd)
+                res = self.run1(cmd)
             if self.step:
                 ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
@@ -139,6 +140,7 @@ class Base:
                     self.step = False
             if self.save_every:
                 self.do_screenshot({})
+        return res
 
     def run1(self, cmd):
         withitem = self.render_dict(cmd.pop("with_items", None))
@@ -196,7 +198,7 @@ class Base:
                     if logtype == "har":
                         logdata = json.loads(self.variables["log"][logtype][0]["message"])
                         self.variables["log"][logtype][0]["message"] = logdata
-                except (KeyError, IndexError, json.decoder.JSONDecodeError) as e:
+                except (KeyError, IndexError, json.decoder.JSONDecodeError):
                     self.log.debug("log.har.0.message does not exists or not json")
                     pass
         for c in cmd.keys():
@@ -232,6 +234,7 @@ class Base:
             else:
                 raise Exception("module not found: %s" % (c))
             time.sleep(delay)
+            return res
 
     def do2_defun(self, funcname, params):
         """
