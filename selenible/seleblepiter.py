@@ -30,6 +30,7 @@ class SelenibleKernel(Kernel):
         for i in def_modules:
             drivers.Base.load_modules(i)
         self._drv = None
+        self.thumbnail = None
         self.log.setLevel(DEBUG)
         self.log.info("kernel started")
 
@@ -63,6 +64,8 @@ class SelenibleKernel(Kernel):
                 self._drv = None
             elif cmd == "loglevel":
                 self.drv.log.setLevel(args[0])
+            elif cmd == "thumbnail":
+                self.thumbnail = (int(args[0]), int(args[1]))
             else:
                 return {'status': 'error', 'ename': "NotFound", "evalue":  "not found", "traceback": []}
             return {'status': 'ok', 'execution_count': self.execution_count}
@@ -96,6 +99,8 @@ class SelenibleKernel(Kernel):
         else:
             imgdata = self.drv.driver.get_screenshot_as_png()
         img = Image.open(io.BytesIO(imgdata))
+        if self.thumbnail is not None:
+            img.thumbnail(self.thumbnail, Image.ANTIALIAS)
         imgdict = {
             "data": {
                 "image/png": base64.b64encode(imgdata).decode("ascii"),
