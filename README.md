@@ -135,3 +135,13 @@ Usage: cli.py [OPTIONS] COMMAND [ARGS]...
 ```
 
 and [more examples](example/)...
+
+# work with jupyter notebook
+
+## install kernel
+
+- jupyter kernelspec install --user seleniblepiter
+
+## examples
+
+- [helloworld](example/helloworld.ipynb)
