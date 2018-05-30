@@ -2,10 +2,10 @@ import io
 import base64
 import yaml
 from PIL import Image
-from logging import getLogger, DEBUG
+from logging import getLogger, DEBUG, StreamHandler
 from ipykernel.kernelbase import Kernel
 from .version import VERSION
-from . import drivers
+from . import drivers, cli
 from selenium.webdriver.remote.webelement import WebElement
 
 
@@ -21,22 +21,51 @@ class SelenibleKernel(Kernel):
         'file_extension': '.yaml',
     }
     banner = "Selenible kernel"
+    driver_name = "phantom"
+    extensions = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         def_modules = ["ctrl", "browser", "content", "imageproc"]
         for i in def_modules:
             drivers.Base.load_modules(i)
-        self.drv = drivers.Phantom()
+        self._drv = None
         self.log.setLevel(DEBUG)
         self.log.info("kernel started")
 
-    def __del__(self):
-        self.log.info("kernel finished?")
-        del self.drv
+    @property
+    def drv(self):
+        if self._drv is None:
+            drvcls = cli.loadmodules(self.driver_name, self.extensions)
+            self._drv = drvcls()
+            drvlog = self._drv.log
+            self.logio = io.StringIO()
+            drvlog.addHandler(StreamHandler(self.logio))
+        return self._drv
+
+    def do_shutdown(self, restart):
+        self.log.info("kernel finished")
+        del self._drv
+        self._drv = None
 
     def do_execute(self, code, silent, store_history=True, user_expressions=None,
                    allow_stdin=False):
+        if code.startswith("%"):
+            token = code.split()
+            cmd = token[0].lstrip("%")
+            args = token[1:]
+            if cmd == "driver":
+                self.driver_name = args[0]
+            elif cmd == "module":
+                self.extensions = args
+            elif cmd == "shutdown":
+                del self._drv
+                self._drv = None
+            elif cmd == "loglevel":
+                self.drv.log.setLevel(args[0])
+            else:
+                return {'status': 'error', 'ename': "NotFound", "evalue":  "not found", "traceback": []}
+            return {'status': 'ok', 'execution_count': self.execution_count}
         v = yaml.load(code)
         self.log.info("yaml: %s", v)
         if not silent:
@@ -47,6 +76,13 @@ class SelenibleKernel(Kernel):
         else:
             res = self.drv.run1(v)
 
+        logstr = self.logio.getvalue()
+        self.logio.seek(0)
+        self.logio.truncate(0)
+        if logstr != "":
+            stream_content = {'data': {"text/plain": logstr},
+                              'execution_count': self.execution_count}
+            self.send_response(self.iopub_socket, 'execute_result', stream_content)
         if not isinstance(res, (str, dict, list, tuple)):
             self.log.info("not json serializeable?: %s", res)
             ress = str(res)
