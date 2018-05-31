@@ -77,7 +77,8 @@ class SelenibleKernel(Kernel):
         if isinstance(v, (list, tuple)):
             res = self.drv.run(v)
         else:
-            res = self.drv.run1(v)
+            with self.drv.lock:
+                res = self.drv.run1(v)
 
         logstr = self.logio.getvalue()
         self.logio.seek(0)
@@ -100,7 +101,12 @@ class SelenibleKernel(Kernel):
             imgdata = self.drv.driver.get_screenshot_as_png()
         img = Image.open(io.BytesIO(imgdata))
         if self.thumbnail is not None:
+            olen = len(imgdata)
             img.thumbnail(self.thumbnail, Image.ANTIALIAS)
+            buf = io.BytesIO()
+            img.save(buf, format="png")
+            imgdata = buf.getvalue()
+            self.log.info("datasize: %d -> %d", olen, len(imgdata))
         imgdict = {
             "data": {
                 "image/png": base64.b64encode(imgdata).decode("ascii"),
