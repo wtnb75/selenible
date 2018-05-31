@@ -14,7 +14,7 @@ setup(
     author_email="wtnb75@gmail.com",
     url="https://github.com/wtnb75/selenible",
     packages=["selenible", "selenible.modules", "selenible.drivers"],
-    package_data={"selenible": ["schema/*.yaml"]},
+    package_data={"selenible": ["schema/*.yaml", "seleniblepiter/*"]},
     license="MIT",
     install_requires=open("requirements.txt").readlines(),
     entry_points={
