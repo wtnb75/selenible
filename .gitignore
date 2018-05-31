@@ -11,3 +11,5 @@ build/
 *.sh
 _book
 .ipynb_checkpoints
+*.bz2
+*.gz
