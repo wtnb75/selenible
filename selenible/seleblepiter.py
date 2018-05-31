@@ -77,7 +77,8 @@ class SelenibleKernel(Kernel):
         if isinstance(v, (list, tuple)):
             res = self.drv.run(v)
         else:
-            res = self.drv.run1(v)
+            with self.drv.lock:
+                res = self.drv.run1(v)
 
         logstr = self.logio.getvalue()
         self.logio.seek(0)
