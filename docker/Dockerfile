@@ -7,7 +7,7 @@ RUN apk add python3-dev py3-pip py3-lxml py3-zmq py3-yaml py3-pillow py3-request
 RUN pip3 install jupyter
 RUN pip3 install selenible
 RUN fc-cache
-#RUN jupyter kernelspec install /usr/lib/python3.6/site-packages/selenible/seleniblepiter
+RUN jupyter kernelspec install /usr/lib/python3.6/site-packages/selenible/seleniblepiter
 RUN curl -L https://github.com/dustinblackman/phantomized/releases/download/2.1.1/dockerized-phantomjs.tar.gz | tar xz -C /
 RUN curl -L https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PJS_VER}-linux-x86_64.tar.bz2 | \
     tar xj -C /tmp phantomjs-${PJS_VER}-linux-x86_64/bin/phantomjs && \
