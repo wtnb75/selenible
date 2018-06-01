@@ -1,5 +1,6 @@
 import io
 import base64
+import inspect
 import yaml
 from PIL import Image
 from logging import getLogger, DEBUG, StreamHandler
@@ -26,9 +27,6 @@ class SelenibleKernel(Kernel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        def_modules = ["ctrl", "browser", "content", "imageproc"]
-        for i in def_modules:
-            drivers.Base.load_modules(i)
         self._drv = None
         self.thumbnail = None
         self.log.setLevel(DEBUG)
@@ -49,23 +47,47 @@ class SelenibleKernel(Kernel):
         del self._drv
         self._drv = None
 
+    def cmd_driver(self, args):
+        "set driver: phantom, chrome, firefox, etc..."
+        self.drive_name = args[0]
+
+    def cmd_module(self, args):
+        "load modules"
+        self.extensions = args
+
+    def cmd_shutdown(self, args):
+        "shutdown driver"
+        del self._drv
+        self._drv = None
+
+    def cmd_loglevel(self, args):
+        "set log level"
+        self.drv.log.setLevel(args[0])
+
+    def cmd_thumbnail(self, args):
+        "set thumbnail size"
+        self.thumbnail = tuple(map(lambda f: int(f), args[:2]))
+
+    def cmd_help(self, args):
+        "show this help"
+        cmds = filter(lambda f: f.startswith("cmd_"), dir(self))
+        cmds = sorted(filter(lambda f: callable(getattr(self, f)), cmds))
+        cmds = [(x.split("_", 1)[1], inspect.getdoc(getattr(self, x))) for x in cmds]
+        txt = "\n".join(["%s: %s" % x for x in cmds])
+        self.send_response(self.iopub_socket, 'stream', {'name': 'stdout', 'text': txt})
+
     def do_execute(self, code, silent, store_history=True, user_expressions=None,
                    allow_stdin=False):
         if code.startswith("%"):
             token = code.split()
             cmd = token[0].lstrip("%")
             args = token[1:]
-            if cmd == "driver":
-                self.driver_name = args[0]
-            elif cmd == "module":
-                self.extensions = args
-            elif cmd == "shutdown":
-                del self._drv
-                self._drv = None
-            elif cmd == "loglevel":
-                self.drv.log.setLevel(args[0])
-            elif cmd == "thumbnail":
-                self.thumbnail = (int(args[0]), int(args[1]))
+            if hasattr(self, "cmd_"+cmd):
+                fn = getattr(self, "cmd_"+cmd)
+                if callable(fn):
+                    fn(args)
+                else:
+                    self.cmd_help()
             else:
                 return {'status': 'error', 'ename': "NotFound", "evalue":  "not found", "traceback": []}
             return {'status': 'ok', 'execution_count': self.execution_count}
@@ -76,9 +98,12 @@ class SelenibleKernel(Kernel):
             self.send_response(self.iopub_socket, 'stream', stream_content)
         if isinstance(v, (list, tuple)):
             res = self.drv.run(v)
+        elif isinstance(v, dict):
+            res = self.drv.run([v])
+        elif isinstance(v, str):
+            res = self.drv.run([{v: None}])
         else:
-            with self.drv.lock:
-                res = self.drv.run1(v)
+            raise Exception("invalid type: %s : %s" % (type(v), v))
 
         logstr = self.logio.getvalue()
         self.logio.seek(0)
