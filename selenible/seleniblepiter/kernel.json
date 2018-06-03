@@ -1,6 +1,6 @@
 {
   "argv": [
-    "python", "-m", "selenible.seleblepiter", "-f", "{connection_file}"
+    "python", "-m", "selenible.jupyter", "-f", "{connection_file}"
   ],
   "display_name": "Selenible"
 }

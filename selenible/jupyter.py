@@ -1,5 +1,6 @@
 import io
 import base64
+import shlex
 import inspect
 import yaml
 from PIL import Image
@@ -79,7 +80,7 @@ class SelenibleKernel(Kernel):
     def do_execute(self, code, silent, store_history=True, user_expressions=None,
                    allow_stdin=False):
         if code.startswith("%"):
-            token = code.split()
+            token = shlex.split(code)
             cmd = token[0].lstrip("%")
             args = token[1:]
             if hasattr(self, "cmd_"+cmd):
