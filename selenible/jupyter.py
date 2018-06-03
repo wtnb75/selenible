@@ -37,6 +37,8 @@ class SelenibleKernel(Kernel):
     def drv(self):
         if self._drv is None:
             drvcls = cli.loadmodules(self.driver_name, self.extensions)
+            self.log.info("driver: cls=%s, name=%s, exts=%s",
+                          drvcls, self.driver_name, self.extensions)
             self._drv = drvcls()
             drvlog = self._drv.log
             self.logio = io.StringIO()
@@ -50,7 +52,8 @@ class SelenibleKernel(Kernel):
 
     def cmd_driver(self, args):
         "set driver: phantom, chrome, firefox, etc..."
-        self.drive_name = args[0]
+        self.log.info("driver: %s -> %s", self.driver_name, args[0])
+        self.driver_name = args[0]
 
     def cmd_module(self, args):
         "load modules"
