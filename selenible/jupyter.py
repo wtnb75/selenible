@@ -1,5 +1,6 @@
 import io
 import base64
+import shlex
 import inspect
 import yaml
 from PIL import Image
@@ -36,6 +37,8 @@ class SelenibleKernel(Kernel):
     def drv(self):
         if self._drv is None:
             drvcls = cli.loadmodules(self.driver_name, self.extensions)
+            self.log.info("driver: cls=%s, name=%s, exts=%s",
+                          drvcls, self.driver_name, self.extensions)
             self._drv = drvcls()
             drvlog = self._drv.log
             self.logio = io.StringIO()
@@ -49,7 +52,8 @@ class SelenibleKernel(Kernel):
 
     def cmd_driver(self, args):
         "set driver: phantom, chrome, firefox, etc..."
-        self.drive_name = args[0]
+        self.log.info("driver: %s -> %s", self.driver_name, args[0])
+        self.driver_name = args[0]
 
     def cmd_module(self, args):
         "load modules"
@@ -79,7 +83,7 @@ class SelenibleKernel(Kernel):
     def do_execute(self, code, silent, store_history=True, user_expressions=None,
                    allow_stdin=False):
         if code.startswith("%"):
-            token = code.split()
+            token = shlex.split(code)
             cmd = token[0].lstrip("%")
             args = token[1:]
             if hasattr(self, "cmd_"+cmd):
