@@ -12,7 +12,8 @@ class TestBase(unittest.TestCase):
 
     def test_load(self):
         for drv in ["dummy", "phantom", "chrome", "firefox"]:
-            cls = cli.loadmodules(drv, [])
+            cls = cli.loadmodules(drv, ["browser", "ctrl", "screencast",
+                                        "webhook", "imageproc", "content"])
             self.assertEqual(cls.__name__.lower(), drv)
             mods = cls.listmodule()
             self.assertTrue("echo" in mods)
