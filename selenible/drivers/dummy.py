@@ -16,6 +16,18 @@ class Dummy(Base):
             log_types = []
             w3c = False
 
+            def __init__(self, dummyparam=None):
+                """
+                initialize dummy driver with dummy parameters
+                """
+                super().__init__()
+
+            def find_element(self, k, v):
+                return None
+
+            def find_elements(self, k, v):
+                return []
+
             def get_cookies(self):
                 return {}
 
