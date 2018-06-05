@@ -124,8 +124,7 @@ class Base:
         res = None
         for cmd in prog:
             self.log.debug("cmd %s", cmd)
-            with self.lock:
-                res = self.run1(cmd)
+            res = self.run1(cmd)
             if self.step:
                 ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
@@ -211,7 +210,8 @@ class Base:
                 self.log.info("start %s", repr(name))
                 start = time.time()
                 try:
-                    res = mtd(param)
+                    with self.lock:
+                        res = mtd(param)
                 except Exception as e:
                     if ignoreerr:
                         self.log.info("error(ignored): %s", e)
@@ -227,7 +227,8 @@ class Base:
                 mtd = getattr(self, mtdname2)
                 param = cmd.get(c)
                 self.log.debug("%s %s %s", name, c, param)
-                res = mtd(c, param)
+                with self.lock:
+                    res = mtd(c, param)
                 if register is not None:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res

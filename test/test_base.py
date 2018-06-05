@@ -7,8 +7,6 @@ from selenible import cli
 
 
 class TestBase(unittest.TestCase):
-    def setUp(self):
-        pass
 
     def test_load(self):
         for drv in ["dummy", "phantom", "chrome", "firefox"]:

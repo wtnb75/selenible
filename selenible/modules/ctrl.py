@@ -26,8 +26,9 @@ def Base_progn(self, param):
         echo: good-bye world
     """
     self.lock.release()
-    self.run(param)
+    ret = self.run(param)
     self.lock.acquire()
+    return ret
 
 
 var_schema = {"type": "object"}
@@ -144,6 +145,10 @@ def Base_runcmd(self, param):
         else:
             serr = DEVNULL
         out = self.runcmd(cmd, stdin=sin, stderr=serr)
+        if serr != DEVNULL:
+            serr.close()
+        if sin != DEVNULL:
+            sin.close()
         self.log.info("result: %s", out)
         if stdout is not None:
             with open(stdout, "w") as f:
@@ -210,14 +215,16 @@ def Base_include(self, param):
             self.log.info("loading %s", fname)
             with open(fname) as f:
                 self.lock.release()
-                self.run(yaml.load(f))
+                ret = self.run(yaml.load(f))
                 self.lock.acquire()
+            return ret
     elif isinstance(param, str):
         self.log.info("loading %s", param)
         with open(param) as f:
             self.lock.release()
-            self.run(yaml.load(f))
+            ret = self.run(yaml.load(f))
             self.lock.acquire()
+        return ret
     else:
         raise Exception("cannot load: %s" % (param))
 
