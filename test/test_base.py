@@ -117,3 +117,46 @@ class TestBase(unittest.TestCase):
         }
         res = drv.findone(param)
         drv.driver.find_element.assert_called_once()
+
+    def test_base(self):
+        def dummymodule(self, param):
+            return "hello"
+        cls = cli.loadmodules("dummy", [])
+        cls.do_dummy = dummymodule
+        drv = cls()
+        res = drv.run([{"name": "dummy", "dummy": None, "with_items": ["a", "b", "c"]}])
+        self.assertEqual(res, "hello")
+
+    def test_removelocator(self):
+        cls = cli.loadmodules("dummy", [])
+        drv = cls()
+        res = drv.removelocator({"id": "id1", "link text": "ltxt1", "blabla": "xyz"})
+        self.assertEqual(res, {"blabla": "xyz"})
+
+    def test_defun(self):
+        cls = cli.loadmodules("dummy", [])
+        drv = cls()
+        defun = {
+            "name": "dummy",
+            "defun": {
+                "name": "func1",
+                "args": ["a1", "a2"],
+                "return": "r",
+                "progn": [
+                    {
+                        "name": "hello",
+                        "echo": "{{a1}} is {{a2}}",
+                    }, {
+                        "name": "set-retval",
+                        "var": {
+                            "r": "hello",
+                        },
+                    },
+                ]
+            }
+        }
+        drv.run([defun])
+        self.assertNotEqual(drv.do2_func1, None)
+        drv.run([{"name": "call func1", "func1": {"a1": "xyz", "a2": "abc"},
+                  "register": "rval1"}])
+        self.assertEqual(drv.variables.get("rval1", None), "hello")
