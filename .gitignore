@@ -13,3 +13,5 @@ _book
 .ipynb_checkpoints
 *.bz2
 *.gz
+.coverage
+htmlcov

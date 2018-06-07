@@ -124,8 +124,7 @@ class Base:
         res = None
         for cmd in prog:
             self.log.debug("cmd %s", cmd)
-            with self.lock:
-                res = self.run1(cmd)
+            res = self.run1(cmd)
             if self.step:
                 ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
@@ -161,12 +160,12 @@ class Base:
                 self.variables[loopvar] = j
                 self.variables[loopiter] = i
                 self.log.info("loop by %d: %s", i, j)
-                self.run1(cmd.copy())
+                res = self.run1(cmd.copy())
                 time.sleep(delay)
             self.variables.pop(loopvar)
             self.variables.pop(loopiter)
             self.log.info("finish loop: %f second", time.time() - start)
-            return
+            return res
         # cmd = self.render_dict(cmd)
         name = self.render_dict(cmd.pop("name", ""))
         condition = self.render_dict(cmd.pop("when", True))
@@ -211,7 +210,8 @@ class Base:
                 self.log.info("start %s", repr(name))
                 start = time.time()
                 try:
-                    res = mtd(param)
+                    with self.lock:
+                        res = mtd(param)
                 except Exception as e:
                     if ignoreerr:
                         self.log.info("error(ignored): %s", e)
@@ -227,7 +227,8 @@ class Base:
                 mtd = getattr(self, mtdname2)
                 param = cmd.get(c)
                 self.log.debug("%s %s %s", name, c, param)
-                res = mtd(c, param)
+                with self.lock:
+                    res = mtd(c, param)
                 if register is not None:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res
@@ -266,17 +267,21 @@ class Base:
 
     def run_func(self, funcname, params):
         params = self.render_dict(params)
-        args, retvar, progn = self.funcs.get(funcname, ([], [], None))
+        args, retvar, progn = self.funcs.get(funcname, ([], None, None))
         oldvars = self.variables
         self.variables = copy.deepcopy(self.variables)
         for a in args:
             self.variables[a] = params.get(a)
         self.log.debug("running %s", progn)
-        self.run(progn)
+        self.lock.release()
+        res = self.run(progn)
+        self.lock.acquire()
         newvars = self.variables
         self.variables = oldvars
-        self.log.debug("return val %s -> %s", retvar, newvars.get(retvar))
-        return newvars.get(retvar)
+        if retvar is not None:
+            self.log.debug("return val %s -> %s", retvar, newvars.get(retvar))
+            return newvars.get(retvar)
+        return res
 
     @classmethod
     def listmodule(cls):
