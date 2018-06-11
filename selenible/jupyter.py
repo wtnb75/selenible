@@ -7,7 +7,7 @@ from PIL import Image
 from logging import getLogger, DEBUG, StreamHandler
 from ipykernel.kernelbase import Kernel
 from .version import VERSION
-from . import drivers, cli
+from . import cli
 from selenium.webdriver.remote.webelement import WebElement
 
 

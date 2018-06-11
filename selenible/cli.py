@@ -15,6 +15,7 @@ from .drivers import WebKitGTK, Dummy, Ie, Opera, Android, Remote
 
 drvmap = {
     "phantom": Phantom,
+    "phantomjs": Phantom,
     "chrome": Chrome,
     "firefox": Firefox,
     "safari": Safari,
@@ -83,6 +84,7 @@ def run(input, driver, step, screenshot, var, e, extension):
     if input is not None:
         prog = yaml.load(input)
         b = drvcls()
+        b.variables["driver"] = driver
         for k, v in os.environ.items():
             b.variables[k] = v
         if var is not None:
