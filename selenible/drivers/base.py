@@ -2,11 +2,8 @@ import sys
 import os
 import subprocess
 import inspect
-import tarfile
-import zipfile
 import time
 import functools
-import tempfile
 import getpass
 import copy
 import io
@@ -19,7 +16,7 @@ import jsonpath_rw
 from threading import Lock
 from pkg_resources import resource_stream
 from lxml import etree
-from PIL import Image, ImageChops
+from PIL import Image
 from selenium.webdriver.common.by import By
 from jinja2 import Template
 from ..version import VERSION
@@ -134,11 +131,7 @@ class Base:
                 if ans == "q":
                     break
                 elif ans == "s":
-                    tf = tempfile.NamedTemporaryFile(suffix=".png")
-                    self.saveshot(tf.name)
-                    img = Image.open(tf.name)
-                    img.show()
-                    tf.close()
+                    self.saveshot_image().show()
                 elif ans == "c":
                     self.step = False
             if self.save_every:
@@ -322,77 +315,11 @@ class Base:
         if fp is None:
             return data
         elif isinstance(fp, str):
-            with open(fp, 'w') as f:
+            with open(fp, 'wb') as f:
                 f.write(data)
         else:
             fp.write(data)
         return data
-
-    def cropimg(self, filename, param):
-        base, ext = os.path.splitext(filename)
-        if ext not in (".png", ".PNG"):
-            self.log.info("non-png: %s ...pass", filename)
-            return
-        if isinstance(param, str) and param == "auto":
-            img = Image.open(filename)
-            bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
-            diff = ImageChops.difference(img, bg)
-            diff = ImageChops.add(diff, diff, 2.0, -100)
-            box = diff.getbbox()
-            self.log.info("auto crop: %s", box)
-            crop = img.crop(box)
-            crop.save(filename)
-        elif isinstance(param, (tuple, list)):
-            img = Image.open(filename)
-            self.log.info("manual crop: %s", param)
-            crop = img.crop(param)
-            crop.save(filename)
-        else:
-            raise Exception("not implemented yet: crop %s %s" % (filename, param))
-
-    def optimizeimg(self, filename):
-        base, ext = os.path.splitext(filename)
-        if ext not in (".png", ".PNG"):
-            self.log.info("non-png: %s ...pass", filename)
-            return
-        self.log.info("optimize image: %s", filename)
-        before = os.stat(filename)
-        if before.st_size == 0:
-            raise Exception("image size is zero: %s" % (filename))
-        cmd = ["optipng", "-o9", filename]
-        self.log.debug("run: %s", cmd)
-        sout = self.runcmd(cmd)
-        self.log.debug("command result: %s", sout)
-        after = os.stat(filename)
-        self.log.info("%s: before=%d, after=%d, reduce %d bytes (%.1f %%)", filename,
-                      before.st_size, after.st_size, before.st_size - after.st_size,
-                      100.0 * (before.st_size - after.st_size) / before.st_size)
-
-    def resizeimg(self, filename, param):
-        base, ext = os.path.splitext(filename)
-        if ext not in (".png", ".PNG"):
-            self.log.info("non-png: %s ...pass", filename)
-            return
-        self.log.info("resize image: %s %s", filename, param)
-        img = Image.open(filename)
-        rst = img.resize(tuple(param))
-        rst.save(filename)
-
-    def archiveimg(self, filename, param):
-        assert isinstance(param, str)
-        base, ext = os.path.splitext(param)
-        if ext in (".zip", ".cbz"):
-            with zipfile.ZipFile(param, 'a') as zf:
-                self.log.debug("zip %s %s", param, filename)
-                zf.write(filename)
-                os.unlink(filename)
-        elif ext in (".tar"):
-            with tarfile.open(param, 'a') as tf:
-                self.log.debug("tar %s %s", param, filename)
-                tf.add(filename)
-                os.unlink(filename)
-        else:
-            raise Exception("not implemented yet: archive %s %s" % (filename, param))
 
     findmap = {
         "id": By.ID,
@@ -443,7 +370,10 @@ class Base:
         nth = param.get("nth", 0)
         if isinstance(ret, (list, tuple)):
             self.log.debug("found %d elements. choose %d-th", len(ret), nth)
-            return ret[nth]
+            if len(ret) > nth:
+                return ret[nth]
+            else:
+                return None
         return ret
 
     def findmany(self, param):

@@ -101,15 +101,35 @@ def Base_screenshot(self, param):
             y1 = elem.location['y']
             x2 = x1 + elem.size['width']
             y2 = y1 + elem.size['height']
-            self.cropimg(output, (x1, y1, x2, y2))
+            nparam = {
+                "input": output,
+                "size": [x1, y1, x2, y2],
+            }
+            self.do_image_crop(nparam)
         if param.get("crop", None) is not None:
-            self.cropimg(output, param.get("crop"))
+            nparam = {
+                "input": output,
+                "size": param.get("crop"),
+            }
+            self.do_image_crop(nparam)
         if param.get("resize", None) is not None:
-            self.resizeimg(output, param.get("resize"))
+            nparam = {
+                "input": output,
+                "size": param.get("resize"),
+            }
+            self.do_image_resize(nparam)
         if param.get("optimize", False):
-            self.optimizeimg(output)
+            nparam = {
+                "input": output,
+            }
+            self.do_image_optimize(nparam)
         if param.get("archive", False):
-            self.archiveimg(output, param.get("archive"))
+            nparam = {
+                "output": param.get("archive"),
+                "input": output,
+                "delete": True,
+            }
+            self.do_image_archive(nparam)
         return output
 
 

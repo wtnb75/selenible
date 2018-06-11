@@ -2,6 +2,8 @@ import os
 import time
 import math
 import yaml
+import tarfile
+import zipfile
 from PIL import Image, ImageChops, ImageFilter, ImageEnhance, ImageFont, ImageDraw, ImageColor, ImageOps
 
 
@@ -322,3 +324,24 @@ def Base_image_ops(self, param):
             self.log.debug("ops %s %s", k, v)
             img = fn(img, *v)
     img.save(filename)
+
+
+def Base_image_archive(self, param):
+    input_filename, filename = inout_fname(param)
+    delflag = param.get("delete", True)
+    assert input_filename != filename
+    base, ext = os.path.splitext(filename)
+    if ext in (".zip", ".cbz"):
+        with zipfile.ZipFile(filename, 'a') as zf:
+            self.log.debug("zip %s %s", filename, input_filename)
+            zf.write(input_filename)
+            if delflag:
+                os.unlink(input_filename)
+    elif ext in (".tar"):
+        with tarfile.open(filename, 'a') as tf:
+            self.log.debug("tar %s %s", filename, input_filename)
+            tf.add(input_filename)
+            if delflag:
+                os.unlink(input_filename)
+    else:
+        raise Exception("not implemented yet: archive %s" % (param,))

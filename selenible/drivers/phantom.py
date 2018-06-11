@@ -1,5 +1,4 @@
 
-import os
 import urllib.parse
 from selenium import webdriver
 from . import Base
