@@ -127,7 +127,7 @@ class SelenibleKernel(Kernel):
         if isinstance(res, WebElement):
             imgdata = res.screenshot_as_png
         else:
-            imgdata = self.drv.driver.get_screenshot_as_png()
+            imgdata = self.drv.saveshot()
         img = Image.open(io.BytesIO(imgdata))
         if self.thumbnail is not None:
             olen = len(imgdata)

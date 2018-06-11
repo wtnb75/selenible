@@ -24,7 +24,7 @@ class screencast(threading.Thread):
         while not self.stop:
             t1 = time.time()
             with self.drvobj.lock:
-                p = self.drvobj.driver.get_screenshot_as_png()
+                p = self.drvobj.saveshot()
                 self.log.info("shot: %d bytes, %f sec", len(p), time.time() - t1)
             if len(p) != 0:
                 img = Image.open(io.BytesIO(p))
