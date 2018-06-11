@@ -9,6 +9,7 @@ import functools
 import tempfile
 import getpass
 import copy
+import io
 from logging import getLogger
 
 import json
@@ -60,6 +61,9 @@ class Base:
             self._driver.close()
             self._driver.quit()
             self._driver = None
+
+    def printpdf(self, output_fn):
+        raise Exception("please implement")
 
     def __del__(self):
         self.shutdown_driver()
@@ -310,8 +314,19 @@ class Base:
         self.log.debug("result: %s", ret)
         return ret
 
-    def saveshot(self, output_fn):
-        self.driver.save_screenshot(output_fn)
+    def saveshot_image(self):
+        return Image.open(io.BytesIO(self.saveshot()))
+
+    def saveshot(self, fp=None):
+        data = self.driver.get_screenshot_as_png()
+        if fp is None:
+            return data
+        elif isinstance(fp, str):
+            with open(fp, 'w') as f:
+                f.write(data)
+        else:
+            fp.write(data)
+        return data
 
     def cropimg(self, filename, param):
         base, ext = os.path.splitext(filename)

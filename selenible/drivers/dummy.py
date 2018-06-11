@@ -1,3 +1,5 @@
+import io
+from PIL import Image
 from . import Base
 
 
@@ -42,4 +44,10 @@ class Dummy(Base):
 
             def quit(self):
                 pass
+
+            def get_screenshot_as_png(self):
+                buf = io.BytesIO()
+                Image.new('1', (1, 1)).save(buf, format='png')
+                return buf.getvalue()
+
         return dummydriver()
