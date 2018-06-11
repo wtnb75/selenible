@@ -2,8 +2,6 @@ import sys
 import os
 import subprocess
 import inspect
-import tarfile
-import zipfile
 import time
 import functools
 import getpass
@@ -322,22 +320,6 @@ class Base:
         else:
             fp.write(data)
         return data
-
-    def archiveimg(self, filename, param):
-        assert isinstance(param, str)
-        base, ext = os.path.splitext(param)
-        if ext in (".zip", ".cbz"):
-            with zipfile.ZipFile(param, 'a') as zf:
-                self.log.debug("zip %s %s", param, filename)
-                zf.write(filename)
-                os.unlink(filename)
-        elif ext in (".tar"):
-            with tarfile.open(param, 'a') as tf:
-                self.log.debug("tar %s %s", param, filename)
-                tf.add(filename)
-                os.unlink(filename)
-        else:
-            raise Exception("not implemented yet: archive %s %s" % (filename, param))
 
     findmap = {
         "id": By.ID,

@@ -124,7 +124,12 @@ def Base_screenshot(self, param):
             }
             self.do_image_optimize(nparam)
         if param.get("archive", False):
-            self.archiveimg(output, param.get("archive"))
+            nparam = {
+                "output": param.get("archive"),
+                "input": output,
+                "delete": True,
+            }
+            self.do_image_archive(nparam)
         return output
 
 
