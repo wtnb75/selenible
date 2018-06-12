@@ -264,6 +264,8 @@ def Base_history(self, param):
                 self.driver.forward()
             elif d in back:
                 self.driver.back()
+            elif d in refresh:
+                self.driver.refresh()
             else:
                 raise Exception("no such direction: %s" % (d))
     elif isinstance(param, str):

@@ -1,6 +1,7 @@
 import os
 import unittest
 import tempfile
+from unittest.mock import MagicMock
 from selenible import cli
 
 
@@ -51,3 +52,74 @@ class TestBrowser(unittest.TestCase):
         drv.do_screenshot({"archive": tfa.name})
         st = os.stat(tfa.name)
         self.assertNotEqual(st.st_size, 0)
+
+    def test_click(self):
+        _, drv = self.dummy()
+        elem = MagicMock()
+        drv.driver.find_elements = MagicMock(return_value=[elem])
+        drv.do_click({"id": "element1"})
+        elem.click.assert_called_once()
+
+    def test_submit(self):
+        _, drv = self.dummy()
+        elem = MagicMock()
+        drv.driver.find_elements = MagicMock(return_value=[elem])
+        drv.do_submit({"id": "element1"})
+        elem.submit.assert_called_once()
+
+    def test_script(self):
+        _, drv = self.dummy()
+        drv.driver.execute_script = MagicMock()
+        drv.do_script("alert();")
+        drv.driver.execute_script.assert_called_once()
+        drv.driver.execute_script.reset_mock()
+
+        drv.do_script(["alert();", "alert();"])
+        self.assertEqual(drv.driver.execute_script.call_count, 2)
+        drv.driver.execute_script.reset_mock()
+
+        tf = tempfile.NamedTemporaryFile()
+        tf.write(b"alert();\n")
+        tf.flush()
+        drv.do_script({"file": tf.name})
+        drv.driver.execute_script.assert_called_once()
+        drv.driver.execute_script.reset_mock()
+
+        with self.assertRaisesRegex(Exception, "no file"):
+            drv.do_script({})
+        drv.driver.execute_script.assert_not_called()
+        drv.driver.execute_script.reset_mock()
+
+        with self.assertRaisesRegex(Exception, "parameter"):
+            drv.do_script(True)
+        drv.driver.execute_script.assert_not_called()
+        drv.driver.execute_script.reset_mock()
+
+    def test_history(self):
+        fwd = MagicMock()
+        back = MagicMock()
+        reload = MagicMock()
+        _, drv = self.dummy()
+        drv.driver.forward = fwd
+        drv.driver.back = back
+        drv.driver.refresh = reload
+        drv.do_history(["b", "back", "backward", "r", "f", "forward"])
+        self.assertEqual(back.call_count, 3)
+        self.assertEqual(fwd.call_count, 2)
+        self.assertEqual(reload.call_count, 1)
+
+        fwd.reset_mock()
+        back.reset_mock()
+        reload.reset_mock()
+        drv.do_history("back")
+        fwd.assert_not_called()
+        back.assert_called_once()
+        reload.assert_not_called()
+        drv.do_history("fwd")
+        fwd.assert_called_once()
+        back.assert_called_once()
+        reload.assert_not_called()
+        drv.do_history("refresh")
+        fwd.assert_called_once()
+        back.assert_called_once()
+        reload.assert_called_once()
