@@ -1,7 +1,7 @@
 import json
 import yaml
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from click.testing import CliRunner
 from selenible import cli
 
@@ -114,6 +114,7 @@ class TestBase(unittest.TestCase):
             "link_text": "ltxt1"
         }
         res = drv.findone(param)
+        self.assertIsNotNone(res)
         drv.driver.find_element.assert_called_once()
 
     def test_base(self):
