@@ -50,4 +50,8 @@ class Dummy(Base):
                 Image.new('1', (1, 1)).save(buf, format='png')
                 return buf.getvalue()
 
+            def get(self, v):
+                self.current_url = v
+                return v
+
         return dummydriver()

@@ -4,7 +4,7 @@
   assert:
     eq:
       - "{{selenible_version}}"
-      - "0.1"
+      - "0.0.2"
 - name: set variables
   var:
     archive: out.tar

@@ -264,6 +264,8 @@ def Base_history(self, param):
                 self.driver.forward()
             elif d in back:
                 self.driver.back()
+            elif d in refresh:
+                self.driver.refresh()
             else:
                 raise Exception("no such direction: %s" % (d))
     elif isinstance(param, str):
@@ -442,12 +444,12 @@ def Base_switch(self, param):
     - name: switch to default window
       switch: default
     """
-    if "window" in param:
+    if param in ("default", None, {}, True):
+        self.driver.switch_to_default_content()
+    elif "window" in param:
         self.driver.switch_to_window(param.get("window"))
     elif "frame" in param:
         self.driver.switch_to_frame(param.get("frame"))
-    elif param in ("default", None, {}):
-        self.driver.switch_to_default_content()
 
 
 def Base_dropfile(self, param):
