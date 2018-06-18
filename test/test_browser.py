@@ -123,3 +123,50 @@ class TestBrowser(unittest.TestCase):
         fwd.assert_called_once()
         back.assert_called_once()
         reload.assert_called_once()
+
+    def test_sendkeys(self):
+        _, drv = self.dummy()
+        elem = MagicMock()
+        m2o = MagicMock(return_value=elem)
+        drv.findmany2one = m2o
+        drv.do_sendKeys({"id": "xxxx", "text": "hello world"})
+        m2o.assert_called_once()
+        elem.send_keys.assert_called_once_with("hello world")
+        elem.clear.assert_not_called()
+
+        with self.assertRaisesRegex(Exception, "not set"):
+            drv.do_sendKeys({})
+
+        m2o.reset_mock()
+        elem.reset_mock()
+        drv.do_sendKeys({"id": "xxxx", "text": "hello world2", "clear": True})
+        elem.send_keys.assert_called_once_with("hello world2")
+        elem.clear.assert_called_once()
+
+    def test_settextvalue(self):
+        _, drv = self.dummy()
+        elem = "assert"
+        m2o = MagicMock(return_value=elem)
+        exs = MagicMock()
+        drv.findmany2one = m2o
+        drv.driver.execute_script = exs
+        drv.do_setTextValue({"id": "xxx", "text": "hello world"})
+        exs.assert_called_once_with("arguments[0].value = arguments[1];", elem, "hello world")
+
+        with self.assertRaisesRegex(Exception, "not set"):
+            drv.do_setTextValue({})
+
+    def test_switch(self):
+        _, drv = self.dummy()
+        drv._driver = MagicMock()
+
+        drv.do_switch({"window": "hello world"})
+        drv.driver.switch_to_window.assert_called_once_with("hello world")
+        drv.driver.reset_mock()
+
+        drv.do_switch({"frame": "frame1"})
+        drv.driver.switch_to_frame.assert_called_once_with("frame1")
+        drv.driver.reset_mock()
+
+        drv.do_switch(True)
+        drv.driver.switch_to_default_content.assert_called_once()
