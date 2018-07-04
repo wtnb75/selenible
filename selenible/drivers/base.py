@@ -152,6 +152,8 @@ class Base:
                     withitem = range(*rg)
                 else:
                     withitem = range(int(rg))
+            elif isinstance(withitem, str):
+                withitem = self.variables.get(withitem, None)
             self.log.info("start loop: %d times", len(withitem))
             for i, j in enumerate(withitem):
                 self.variables[loopvar] = j
