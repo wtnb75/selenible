@@ -394,7 +394,7 @@ def Base_download(self, param):
                          secure=ck.get("secure", False))
     resp = sess.request(method, url, params=query, headers=headers, timeout=timeout)
     if output is not None:
-        with open(output, "w") as f:
+        with open(output, "wb") as f:
             f.write(resp.content)
     if is_json:
         return resp.json()
