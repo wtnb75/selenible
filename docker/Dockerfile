@@ -1,4 +1,5 @@
 FROM alpine:3.7
+
 ARG PJS_VER=2.1.1
 ADD repositories /etc/apk/repositories
 RUN apk update \
