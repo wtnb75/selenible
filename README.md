@@ -157,5 +157,5 @@ docker build -t local/selenible docker
 ## Run container
 
 ```
-docker run --rm -v $(pwd)/notebooks:/home/jupyter -p 8888:8888 local/selenible
+docker run --rm -v $(pwd)/example:/home/jupyter/nb -p 8888:8888 local/selenible
 ```
