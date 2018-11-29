@@ -17,4 +17,4 @@ RUN apk update \
     && adduser jupyter -D
 EXPOSE 8888
 USER jupyter
-CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888"]
+CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/home/jupyter"]
