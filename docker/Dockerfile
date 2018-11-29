@@ -9,7 +9,7 @@ RUN apk update \
     && pip3 install jupyter \
     && pip3 install selenible \
     && ln -s /usr/bin/python3 /usr/bin/python \
-    && mkdir -p /usr/src && cd /usr/src && git clone --depth=1 https://github.com/wtnb75/selenible.git \
+    && mkdir -p /usr/src && cd /usr/src && git clone --depth=1 https://github.com/stoeps13/selenible.git && cd selenible && git checkout dockerfix \
     && fc-cache \
     && jupyter kernelspec install /usr/src/selenible/selenible/seleniblepiter \
     && curl -L https://github.com/dustinblackman/phantomized/releases/download/2.1.1/dockerized-phantomjs.tar.gz | tar xz -C / \
