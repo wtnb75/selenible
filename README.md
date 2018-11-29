@@ -145,3 +145,17 @@ and [more examples](example/)...
 ## examples
 
 - [helloworld](example/helloworld.ipynb)
+
+# Docker
+
+## Build image
+
+```
+docker build -t local/selenible docker
+```
+
+## Run container
+
+```
+docker run --rm -v $(pwd)/notebooks:/home/jupyter -p 8888:8888 local/selenible
+```
