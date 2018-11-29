@@ -8,7 +8,7 @@ RUN apk update \
     && pip3 install jupyter \
     && pip3 install selenible \
     && fc-cache \
-    && jupyter kernelspec install /usr/lib/python3.6/site-packages/selenible \
+    && jupyter kernelspec install /usr/lib/python3.6/site-packages/selenible/seleniblepiter \
     && curl -L https://github.com/dustinblackman/phantomized/releases/download/2.1.1/dockerized-phantomjs.tar.gz | tar xz -C / \
     && curl -L https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PJS_VER}-linux-x86_64.tar.bz2 | \
     tar xj -C /tmp phantomjs-${PJS_VER}-linux-x86_64/bin/phantomjs && \
@@ -17,4 +17,5 @@ RUN apk update \
     && adduser jupyter -D
 EXPOSE 8888
 USER jupyter
-CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/home/jupyter"]
+RUN mkdir /home/jupyter/nb
+CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--notebook-dir=/home/jupyter/nb"]
