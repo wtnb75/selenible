@@ -10,7 +10,7 @@ from lxml import etree
 import logging.config
 
 
-progn_schema = yaml.load("""
+progn_schema = yaml.safe_load("""
 type: array
 items: {type: object}
 """)
@@ -63,7 +63,7 @@ def Base_var_if_not(self, param):
             self.variables[k] = v
 
 
-var_from_schema = yaml.load("""
+var_from_schema = yaml.safe_load("""
 type: object
 properties:
   yaml: {type: string}
@@ -82,7 +82,7 @@ def Base_var_from(self, param):
     """
     if "yaml" in param:
         with open(param.get("yaml")) as f:
-            self.do_var(yaml.load(f))
+            self.do_var(yaml.safe_load(f))
     if "json" in param:
         with open(param.get("json")) as f:
             self.do_var(json.load(f))
@@ -104,7 +104,7 @@ def Base_var_from_if_not(self, param):
     """
     if "yaml" in param:
         with open(param.get("yaml")) as f:
-            self.do_var_if_not(yaml.load(f))
+            self.do_var_if_not(yaml.safe_load(f))
     if "json" in param:
         with open(param.get("json")) as f:
             self.do_var_if_not(json.load(f))
@@ -158,7 +158,7 @@ def Base_runcmd(self, param):
         raise Exception("runcmd: param not supported: %s" % (param))
 
 
-echo_schema = yaml.load("""
+echo_schema = yaml.safe_load("""
 oneOf:
   - type: string
   - "$ref": "#/definitions/common/textvalue"
@@ -193,7 +193,7 @@ def Base_sleep(self, param):
     self.lock.acquire()
 
 
-include_schema = yaml.load("""
+include_schema = yaml.safe_load("""
 oneOf:
   - type: string
   - type: array
@@ -215,14 +215,14 @@ def Base_include(self, param):
             self.log.info("loading %s", fname)
             with open(fname) as f:
                 self.lock.release()
-                ret = self.run(yaml.load(f))
+                ret = self.run(yaml.safe_load(f))
                 self.lock.acquire()
             return ret
     elif isinstance(param, str):
         self.log.info("loading %s", param)
         with open(param) as f:
             self.lock.release()
-            ret = self.run(yaml.load(f))
+            ret = self.run(yaml.safe_load(f))
             self.lock.acquire()
         return ret
     else:
@@ -310,7 +310,7 @@ def Base_assert_not(self, param):
         raise Exception("condition(not) failed: %s" % (param))
 
 
-xslt_schema = yaml.load("""
+xslt_schema = yaml.safe_load("""
 type: object
 properties:
   proc: {type: string}
@@ -351,7 +351,7 @@ def Base_xslt(self, param):
         raise Exception("invalid parameter: %s" % (param))
 
 
-download_schema = yaml.load("""
+download_schema = yaml.safe_load("""
 type: object
 properties:
   url: {type: string}
@@ -401,7 +401,7 @@ def Base_download(self, param):
     return resp.text
 
 
-set_schema = yaml.load("""
+set_schema = yaml.safe_load("""
 anyOf:
   - "$ref": "#/definitions/common/locator"
   - "$ref": "#/definitions/common/textvalue"

@@ -1,7 +1,7 @@
 import re
 import yaml
 
-update_style_schema = yaml.load("""
+update_style_schema = yaml.safe_load("""
 allOf:
   - type: object
   - "$ref": "#/definitions/common/locator"
@@ -30,7 +30,7 @@ def Base_update_style(self, param):
             self.execute(script, elem)
 
 
-update_content_schema = yaml.load("""
+update_content_schema = yaml.safe_load("""
 allOf:
   - type: object
     properties:
@@ -78,7 +78,7 @@ def Base_update_content(self, param):
         self.execute(script, elem)
 
 
-update_attribute_schema = yaml.load("""
+update_attribute_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/locator"
   - type: object

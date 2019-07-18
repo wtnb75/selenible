@@ -95,7 +95,7 @@ class SelenibleKernel(Kernel):
             else:
                 return {'status': 'error', 'ename': "NotFound", "evalue":  "not found", "traceback": []}
             return {'status': 'ok', 'execution_count': self.execution_count}
-        v = yaml.load(code)
+        v = yaml.safe_load(code)
         self.log.info("yaml: %s", v)
         if not silent:
             stream_content = {'name': 'stdout', 'text': yaml.dump(v, default_flow_style=False)}

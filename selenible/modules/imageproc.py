@@ -15,7 +15,7 @@ def inout_fname(param):
     return input_filename, output_filename
 
 
-image_crop_schema = yaml.load("""
+image_crop_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/inout"
   - type: object
@@ -70,7 +70,7 @@ def Base_image_crop(self, param):
         raise Exception("not implemented yet: crop %s %s" % (filename, size))
 
 
-image_optimize_schema = yaml.load("""
+image_optimize_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/inout"
   - type: object
@@ -103,7 +103,7 @@ def Base_image_optimize(self, param):
                   100.0 * (before.st_size - after.st_size) / before.st_size)
 
 
-image_resize_schema = yaml.load("""
+image_resize_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/inout"
   - type: object

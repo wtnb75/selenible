@@ -2,7 +2,7 @@ import json
 import yaml
 import requests
 
-webhook_schema = yaml.load("""
+webhook_schema = yaml.safe_load("""
 type: object
 properties:
   url: {type: string}

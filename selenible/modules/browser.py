@@ -9,7 +9,7 @@ from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.support.select import Select
 
 
-open_schema = yaml.load("""
+open_schema = yaml.safe_load("""
 oneOf:
   - type: string
   - type: object
@@ -46,7 +46,7 @@ def Base_open(self, param):
     return self.driver.current_url
 
 
-screenshot_schema = yaml.load("""
+screenshot_schema = yaml.safe_load("""
 oneOf:
   - type: string
   - allOf:
@@ -207,7 +207,7 @@ def Base_waitfor(self, param):
     raise Exception("not implemented: param=%s" % (param))
 
 
-script_schema = yaml.load("""
+script_schema = yaml.safe_load("""
 oneOf:
   - type: string
   - type: array
@@ -239,7 +239,7 @@ def Base_script(self, param):
         raise Exception("parameter error: %s" % (param))
 
 
-history_schema = yaml.load("""
+history_schema = yaml.safe_load("""
 oneOf:
   - type: string
     enum: [forward, fwd, f, backward, back, b]
@@ -281,7 +281,7 @@ def Base_history(self, param):
         raise Exception("history: not supported direction: %s" % (param))
 
 
-sendKeys_schema = yaml.load("""
+sendKeys_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/locator"
   - "$ref": "#/definitions/common/textvalue"
@@ -314,7 +314,7 @@ def Base_sendKeys(self, param):
     return self.return_element(param, elem)
 
 
-setTextValue_schema = yaml.load("""
+setTextValue_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/locator"
   - "$ref": "#/definitions/common/textvalue"
@@ -338,7 +338,7 @@ def Base_setTextValue(self, param):
     return self.return_element(param, elem)
 
 
-save_schema = yaml.load("""
+save_schema = yaml.safe_load("""
 allOf:
   - type: object
     properties:
@@ -398,7 +398,7 @@ def Base_save(self, param):
     return txt
 
 
-dragdrop_schema = yaml.load("""
+dragdrop_schema = yaml.safe_load("""
 type: object
 properties:
   src: {"$ref": "#/definitions/common/locator"}
@@ -420,7 +420,7 @@ def Base_dragdrop(self, param):
     ActionChains(self.driver).drag_and_drop(src, dst).perform()
 
 
-switch_schema = yaml.load("""
+switch_schema = yaml.safe_load("""
 oneOf:
   - type: string
     enum: [default]
@@ -462,7 +462,7 @@ def Base_dropfile(self, param):
     raise Exception("not implemented yet")
 
 
-deletecookie_schema = yaml.load("""
+deletecookie_schema = yaml.safe_load("""
 oneOf:
   - type: array
     items: {type: string}
@@ -505,7 +505,7 @@ def Base_alertOK(self, param):
             Alert(self.driver).dismiss()
 
 
-auth_schema = yaml.load("""
+auth_schema = yaml.safe_load("""
 type: object
 properties:
   username: {type: string}
@@ -525,7 +525,7 @@ def Base_auth(self, param):
     Alert(self.driver).authenticate(user, passwd)
 
 
-select_schema = yaml.load("""
+select_schema = yaml.safe_load("""
 allOf:
   - "$ref": "#/definitions/common/locator"
   - type: object
@@ -592,7 +592,7 @@ def Base_select(self, param):
     return self.return_element(param, res)
 
 
-scroll_schema = yaml.load("""
+scroll_schema = yaml.safe_load("""
 anyOf:
   - "$ref": "#/definitions/common/locator"
   - type: object
