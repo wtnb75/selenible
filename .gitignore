@@ -15,3 +15,8 @@ _book
 *.gz
 .coverage
 htmlcov
+bin
+lib
+include
+pyvenv.cfg
+pip-selfcheck.json

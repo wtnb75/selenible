@@ -82,7 +82,7 @@ def run(input, driver, step, screenshot, var, e, extension):
     captureWarnings(True)
     drvcls = loadmodules(driver, extension)
     if input is not None:
-        prog = yaml.load(input)
+        prog = yaml.safe_load(input)
         b = drvcls()
         b.variables["driver"] = driver
         for k, v in os.environ.items():
@@ -148,7 +148,7 @@ def dump_schema(driver, extension, format):
 @click.argument("input", type=click.File('r'), required=False)
 def validate(driver, extension, input):
     drvcls = loadmodules(driver, extension)
-    prog = yaml.load(input)
+    prog = yaml.safe_load(input)
     try:
         click.echo("validating...", nl=False)
         jsonschema.validate(prog, drvcls.schema)

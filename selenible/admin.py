@@ -18,7 +18,7 @@ def docdata(driver, extension, docdata):
     def_text = "(description write here)\n"
     result = {}
     if docdata is not None:
-        result = yaml.load(docdata)
+        result = yaml.safe_load(docdata)
     mods = drvcls.listmodule()
     for k in sorted(mods.keys()):
         print("%s: |" % (k))
@@ -40,7 +40,7 @@ def show(driver, extension, name, template, docdata, longdoc):
         "name": name,
         "example": mods.get(name),
         "schema": drvcls.schema.get("items", {}).get("properties", {}).get(name, None),
-        "description": yaml.load(docdata).get(name),
+        "description": yaml.safe_load(docdata).get(name),
     }
     if longdoc is not None:
         arg["long_description"] = longdoc.read()

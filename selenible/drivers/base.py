@@ -18,13 +18,14 @@ from pkg_resources import resource_stream
 from lxml import etree
 from PIL import Image
 from selenium.webdriver.common.by import By
+import selenium.common.exceptions
 from jinja2 import Template
 from ..version import VERSION
 
 
 class Base:
     passcmd = "pass"
-    schema = yaml.load(resource_stream(__name__, '../schema/base.yaml'))
+    schema = yaml.safe_load(resource_stream(__name__, '../schema/base.yaml'))
 
     def __init__(self):
         self.lock = Lock()
@@ -104,7 +105,7 @@ class Base:
             log.debug("register methods: %s", "/".join(mtd))
 
     def load_vars(self, fp):
-        self.variables.update(yaml.load(fp))
+        self.variables.update(yaml.safe_load(fp))
 
     def render(self, s):
         return Template(s).render(self.variables)
@@ -127,7 +128,8 @@ class Base:
             self.log.debug("cmd %s", cmd)
             res = self.run1(cmd)
             if self.step:
-                ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
+                ans = input(
+                    "step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
                     break
                 elif ans == "s":
@@ -185,20 +187,32 @@ class Base:
             for v in ("current_url", "page_source", "title",
                       "window_handles", "session_id", "current_window_handle",
                       "capabilities", "log_types", "w3c"):
-                self.variables[v] = getattr(self.driver, v)
-            for v in ("cookies", "window_size", "window_position"):
-                self.variables[v] = getattr(self.driver, "get_" + v)()
-            self.variables["log"] = {}
-            for logtype in self.driver.log_types:
-                self.variables["log"][logtype] = self.driver.get_log(logtype)
-                # phantomjs case
                 try:
-                    if logtype == "har":
-                        logdata = json.loads(self.variables["log"][logtype][0]["message"])
-                        self.variables["log"][logtype][0]["message"] = logdata
-                except (KeyError, IndexError, json.decoder.JSONDecodeError):
-                    self.log.debug("log.har.0.message does not exists or not json")
-                    pass
+                    self.variables[v] = getattr(self.driver, v)
+                except selenium.common.exceptions.WebDriverException:
+                    self.log.info("cannot get attribute %s", v)
+            for v in ("cookies", "window_size", "window_position"):
+                try:
+                    self.variables[v] = getattr(self.driver, "get_" + v)()
+                except selenium.common.exceptions.WebDriverException:
+                    self.log.info("cannot get attribute %s", v)
+            self.variables["log"] = {}
+            try:
+                for logtype in self.driver.log_types:
+                    self.variables["log"][logtype] = self.driver.get_log(
+                        logtype)
+                    # phantomjs case
+                    try:
+                        if logtype == "har":
+                            logdata = json.loads(
+                                self.variables["log"][logtype][0]["message"])
+                            self.variables["log"][logtype][0]["message"] = logdata
+                    except (KeyError, IndexError, json.decoder.JSONDecodeError):
+                        self.log.debug(
+                            "log.har.0.message does not exists or not json")
+                        pass
+            except selenium.common.exceptions.WebDriverException:
+                self.log.info("cannot get log types")
         for c in cmd.keys():
             mtdname = "do_%s" % (c)
             mtdname2 = "do2_%s" % (c)
@@ -220,7 +234,8 @@ class Base:
                 if register is not None:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res
-                self.log.info("finish %s %f second", repr(name), time.time() - start)
+                self.log.info("finish %s %f second",
+                              repr(name), time.time() - start)
             elif hasattr(self, mtdname2):
                 # 1st class module
                 mtd = getattr(self, mtdname2)
@@ -401,7 +416,7 @@ class Base:
         elif "yaml" in param:
             p = param.get("yaml")
             with open(p.get("file")) as f:
-                data = yaml.load(f)
+                data = yaml.safe_load(f)
                 return jsonpath_rw.parse(p.get("path", "*")).find(data)[0].value
         elif "json" in param:
             p = param.get("json")
@@ -437,19 +452,26 @@ class Base:
                 elif k in ("not"):
                     res.append(not self.eval_param(v))
                 elif k in ("and", "&", "&&"):
-                    res.append(functools.reduce(lambda a, b: a and b, self.eval_param(v)))
+                    res.append(functools.reduce(
+                        lambda a, b: a and b, self.eval_param(v)))
                 elif k in ("or", "|", "||"):
-                    res.append(functools.reduce(lambda a, b: a or b, self.eval_param(v)))
+                    res.append(functools.reduce(
+                        lambda a, b: a or b, self.eval_param(v)))
                 elif k in ("xor", "^"):
-                    res.append(functools.reduce(lambda a, b: bool(a) ^ bool(b), self.eval_param(v)))
+                    res.append(functools.reduce(lambda a, b: bool(a)
+                                                ^ bool(b), self.eval_param(v)))
                 elif k in ("add", "sum", "plus", "+"):
-                    res.append(functools.reduce(lambda a, b: a + b, self.eval_param(v)))
+                    res.append(functools.reduce(
+                        lambda a, b: a + b, self.eval_param(v)))
                 elif k in ("sub", "minus", "-"):
-                    res.append(functools.reduce(lambda a, b: a - b, self.eval_param(v)))
+                    res.append(functools.reduce(
+                        lambda a, b: a - b, self.eval_param(v)))
                 elif k in ("mul", "times", "*"):
-                    res.append(functools.reduce(lambda a, b: a * b, self.eval_param(v)))
+                    res.append(functools.reduce(
+                        lambda a, b: a * b, self.eval_param(v)))
                 elif k in ("div", "/"):
-                    res.append(functools.reduce(lambda a, b: a / b, self.eval_param(v)))
+                    res.append(functools.reduce(
+                        lambda a, b: a / b, self.eval_param(v)))
                 elif k in ("selected",):
                     for e in self.findmany(v):
                         res.append(e.is_selected())
