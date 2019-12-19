@@ -95,12 +95,17 @@ def Base_image_optimize(self, param):
         cmd = [command, "-o9", "-out", filename, input_filename]
     else:
         cmd = [command, "-o9", filename]
-    sout = self.runcmd(cmd)
-    self.log.debug("result: %s", sout)
-    after = os.stat(filename)
-    self.log.info("%s: before=%d, after=%d, reduce %d bytes (%.1f %%)", filename,
-                  before.st_size, after.st_size, before.st_size - after.st_size,
-                  100.0 * (before.st_size - after.st_size) / before.st_size)
+    try:
+        sout = self.runcmd(cmd)
+        self.log.debug("result: %s", sout)
+        after = os.stat(filename)
+        self.log.info("%s: before=%d, after=%d, reduce %d bytes (%.1f %%)", filename,
+                      before.st_size, after.st_size, before.st_size - after.st_size,
+                      100.0 * (before.st_size - after.st_size) / before.st_size)
+    except FileNotFoundError as e:
+        self.log.info("cannot exec %s: %s", cmd, e)
+        if filename != input_filename:
+            os.rename(input_filename, filename)
 
 
 image_resize_schema = yaml.safe_load("""

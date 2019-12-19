@@ -86,14 +86,14 @@ class SelenibleKernel(Kernel):
             token = shlex.split(code)
             cmd = token[0].lstrip("%")
             args = token[1:]
-            if hasattr(self, "cmd_"+cmd):
-                fn = getattr(self, "cmd_"+cmd)
+            if hasattr(self, "cmd_" + cmd):
+                fn = getattr(self, "cmd_" + cmd)
                 if callable(fn):
                     fn(args)
                 else:
                     self.cmd_help()
             else:
-                return {'status': 'error', 'ename': "NotFound", "evalue":  "not found", "traceback": []}
+                return {'status': 'error', 'ename': "NotFound", "evalue": "not found", "traceback": []}
             return {'status': 'ok', 'execution_count': self.execution_count}
         v = yaml.safe_load(code)
         self.log.info("yaml: %s", v)

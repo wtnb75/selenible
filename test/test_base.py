@@ -42,7 +42,7 @@ class TestBase(unittest.TestCase):
     def test_dumpschema(self):
         runner = CliRunner()
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "yaml"])
-        scm = yaml.load(result.output)
+        scm = yaml.safe_load(result.output)
         self.assertEqual(scm.get("$schema", None), "http://json-schema.org/draft-04/schema")
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "json"])
         scm = json.loads(result.output)
@@ -60,7 +60,7 @@ class TestBase(unittest.TestCase):
     def test_dummyoptions(self):
         runner = CliRunner()
         result = runner.invoke(cli.cli, ["--quiet", "browser-options", "--driver", "dummy"])
-        data = yaml.load(result.output)
+        data = yaml.safe_load(result.output)
         self.assertIn("browser_setting", data)
         self.assertIn("dummyparam", data.get("browser_setting", {}))
         result = runner.invoke(cli.cli, ["--quiet", "browser-options",

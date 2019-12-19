@@ -458,8 +458,7 @@ class Base:
                     res.append(functools.reduce(
                         lambda a, b: a or b, self.eval_param(v)))
                 elif k in ("xor", "^"):
-                    res.append(functools.reduce(lambda a, b: bool(a)
-                                                ^ bool(b), self.eval_param(v)))
+                    res.append(functools.reduce(lambda a, b: bool(a) ^ bool(b), self.eval_param(v)))
                 elif k in ("add", "sum", "plus", "+"):
                     res.append(functools.reduce(
                         lambda a, b: a + b, self.eval_param(v)))

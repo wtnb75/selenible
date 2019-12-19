@@ -145,3 +145,9 @@ and [more examples](example/)...
 ## examples
 
 - [helloworld](example/helloworld.ipynb)
+
+# Links
+
+- [pypi](https://pypi.org/project/selenible/)
+- [coverage](https://wtnb75.github.io/selenible/)
+- [local pypi repo](https://wtnb75.github.io/selenible/dist/)
