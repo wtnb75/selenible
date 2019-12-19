@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Coverage report</title>
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="jquery.ba-throttle-debounce.min.js"></script>
+    <script type="text/javascript" src="jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="jquery.hotkeys.js"></script>
+    <script type="text/javascript" src="coverage_html.js"></script>
+    <script type="text/javascript">
+        jQuery(document).ready(coverage.index_ready);
+    </script>
+</head>
+<body class="indexfile">
+<div id="header">
+    <div class="content">
+        <h1>Coverage report:
+            <span class="pc_cov">52%</span>
+        </h1>
+        <img id="keyboard_icon" src="keybd_closed.png" alt="Show keyboard shortcuts" />
+        <form id="filter_container">
+            <input id="filter" type="text" value="" placeholder="filter..." />
+        </form>
+    </div>
+</div>
+<div class="help_panel">
+    <img id="panel_icon" src="keybd_open.png" alt="Hide keyboard shortcuts" />
+    <p class="legend">Hot-keys on this page</p>
+    <div>
+    <p class="keyhelp">
+        <span class="key">n</span>
+        <span class="key">s</span>
+        <span class="key">m</span>
+        <span class="key">x</span>
+        <span class="key">c</span> &nbsp; change column sorting
+    </p>
+    </div>
+</div>
+<div id="index">
+    <table class="index">
+        <thead>
+            <tr class="tablehead" title="Click to sort">
+                <th class="name left headerSortDown shortkey_n">Module</th>
+                <th class="shortkey_s">statements</th>
+                <th class="shortkey_m">missing</th>
+                <th class="shortkey_x">excluded</th>
+                <th class="right shortkey_c">coverage</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr class="total">
+                <td class="name left">Total</td>
+                <td>1721</td>
+                <td>828</td>
+                <td>0</td>
+                <td class="right" data-ratio="893 1721">52%</td>
+            </tr>
+        </tfoot>
+        <tbody>
+            <tr class="file">
+                <td class="name left"><a href="selenible___init___py.html">selenible/__init__.py</a></td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="0 0">100%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_admin_py.html">selenible/admin.py</a></td>
+                <td>55</td>
+                <td>34</td>
+                <td>0</td>
+                <td class="right" data-ratio="21 55">38%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_cli_py.html">selenible/cli.py</a></td>
+                <td>146</td>
+                <td>47</td>
+                <td>0</td>
+                <td class="right" data-ratio="99 146">68%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers___init___py.html">selenible/drivers/__init__.py</a></td>
+                <td>13</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="13 13">100%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_android_py.html">selenible/drivers/android.py</a></td>
+                <td>5</td>
+                <td>1</td>
+                <td>0</td>
+                <td class="right" data-ratio="4 5">80%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_base_py.html">selenible/drivers/base.py</a></td>
+                <td>425</td>
+                <td>136</td>
+                <td>0</td>
+                <td class="right" data-ratio="289 425">68%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_chrome_py.html">selenible/drivers/chrome.py</a></td>
+                <td>13</td>
+                <td>6</td>
+                <td>0</td>
+                <td class="right" data-ratio="7 13">54%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_dummy_py.html">selenible/drivers/dummy.py</a></td>
+                <td>41</td>
+                <td>5</td>
+                <td>0</td>
+                <td class="right" data-ratio="36 41">88%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_edge_py.html">selenible/drivers/edge.py</a></td>
+                <td>5</td>
+                <td>1</td>
+                <td>0</td>
+                <td class="right" data-ratio="4 5">80%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_firefox_py.html">selenible/drivers/firefox.py</a></td>
+                <td>21</td>
+                <td>14</td>
+                <td>0</td>
+                <td class="right" data-ratio="7 21">33%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_ie_py.html">selenible/drivers/ie.py</a></td>
+                <td>8</td>
+                <td>2</td>
+                <td>0</td>
+                <td class="right" data-ratio="6 8">75%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_opera_py.html">selenible/drivers/opera.py</a></td>
+                <td>8</td>
+                <td>2</td>
+                <td>0</td>
+                <td class="right" data-ratio="6 8">75%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_phantom_py.html">selenible/drivers/phantom.py</a></td>
+                <td>42</td>
+                <td>35</td>
+                <td>0</td>
+                <td class="right" data-ratio="7 42">17%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_remote_py.html">selenible/drivers/remote.py</a></td>
+                <td>5</td>
+                <td>1</td>
+                <td>0</td>
+                <td class="right" data-ratio="4 5">80%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_safari_py.html">selenible/drivers/safari.py</a></td>
+                <td>5</td>
+                <td>1</td>
+                <td>0</td>
+                <td class="right" data-ratio="4 5">80%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_drivers_webkitgtk_py.html">selenible/drivers/webkitgtk.py</a></td>
+                <td>8</td>
+                <td>2</td>
+                <td>0</td>
+                <td class="right" data-ratio="6 8">75%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_jupyter_py.html">selenible/jupyter.py</a></td>
+                <td>115</td>
+                <td>82</td>
+                <td>0</td>
+                <td class="right" data-ratio="33 115">29%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_modules_browser_py.html">selenible/modules/browser.py</a></td>
+                <td>293</td>
+                <td>151</td>
+                <td>0</td>
+                <td class="right" data-ratio="142 293">48%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_modules_content_py.html">selenible/modules/content.py</a></td>
+                <td>36</td>
+                <td>28</td>
+                <td>0</td>
+                <td class="right" data-ratio="8 36">22%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_modules_ctrl_py.html">selenible/modules/ctrl.py</a></td>
+                <td>203</td>
+                <td>90</td>
+                <td>0</td>
+                <td class="right" data-ratio="113 203">56%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_modules_imageproc_py.html">selenible/modules/imageproc.py</a></td>
+                <td>187</td>
+                <td>120</td>
+                <td>0</td>
+                <td class="right" data-ratio="67 187">36%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_modules_screencast_py.html">selenible/modules/screencast.py</a></td>
+                <td>69</td>
+                <td>58</td>
+                <td>0</td>
+                <td class="right" data-ratio="11 69">16%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_modules_webhook_py.html">selenible/modules/webhook.py</a></td>
+                <td>17</td>
+                <td>12</td>
+                <td>0</td>
+                <td class="right" data-ratio="5 17">29%</td>
+            </tr>
+            <tr class="file">
+                <td class="name left"><a href="selenible_version_py.html">selenible/version.py</a></td>
+                <td>1</td>
+                <td>0</td>
+                <td>0</td>
+                <td class="right" data-ratio="1 1">100%</td>
+            </tr>
+        </tbody>
+    </table>
+    <p id="no_rows">
+        No items found using the specified filter.
+    </p>
+</div>
+<div id="footer">
+    <div class="content">
+        <p>
+            <a class="nav" href="https://coverage.readthedocs.io">coverage.py v5.0</a>,
+            created at 2019-12-19 13:52
+        </p>
+    </div>
+</div>
+</body>
+</html>
