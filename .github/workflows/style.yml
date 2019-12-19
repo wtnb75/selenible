@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches-ignore: [master, gh-pages]
+
+jobs:
+  style:
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: setup python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: get pip cache
+      id: pip-cache
+      run: |
+        python -c "from pip._internal.locations import USER_CACHE_DIR; print('::set-output name=dir::' + USER_CACHE_DIR)"
+    - name: cache
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-pip-${{ hashfiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+    - name: Install checker
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyflakes pycodestyle
+    - name: check coding style
+      run: pycodestyle --max-line-length=120 selenible
+    - name: pyflakes
+      run: pyflakes selenible/[^_]*.py

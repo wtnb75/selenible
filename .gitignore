@@ -20,3 +20,7 @@ lib
 include
 pyvenv.cfg
 pip-selfcheck.json
+man
+share
+cover
+.coverage

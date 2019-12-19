@@ -15,7 +15,7 @@ class TestCtrl(unittest.TestCase):
         import logging
         drv.log.setLevel(logging.ERROR+10)  # suppress logging
         if isinstance(param, str):
-            param = yaml.load(param)
+            param = yaml.safe_load(param)
         if isinstance(param, dict):
             res = drv.run([param])
         if isinstance(param, str):
