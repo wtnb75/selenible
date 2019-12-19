@@ -3,7 +3,7 @@ name: release to pypi
 on:
   push:
     tags:
-    - '*'
+    - 'v*'
 
 jobs:
   deploy:
@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements.txt -r requirements-dev.txt
     - name: versioning
-      run: "echo \"VERSION = '${GITHUB_REF##*/}'\" > selenible/version.py"
+      run: "echo \"VERSION = '${GITHUB_REF##*/v}'\" > selenible/version.py"
     - name: build wheel
       run: python setup.py bdist_wheel
     - name: check

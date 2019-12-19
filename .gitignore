@@ -24,3 +24,6 @@ man
 share
 cover
 .coverage
+.cache
+.ipython
+etc
