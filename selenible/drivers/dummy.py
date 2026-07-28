@@ -1,5 +1,8 @@
 import io
+from typing import ClassVar
+
 from PIL import Image
+
 from . import Base
 
 
@@ -7,15 +10,15 @@ class Dummy(Base):
     def boot_driver(self):
         class dummydriver:
             name = "dummy"
-            desired_capabilities = {}
+            desired_capabilities: ClassVar = {}
             current_url = "http://example.com"
             page_source = "source string"
             title = "title string"
-            window_handles = []
+            window_handles: ClassVar = []
             session_id = "dummy"
             current_window_handle = None
             capabilities = None
-            log_types = []
+            log_types: ClassVar = []
             w3c = False
 
             def __init__(self, dummyparam=None):
@@ -47,7 +50,7 @@ class Dummy(Base):
 
             def get_screenshot_as_png(self):
                 buf = io.BytesIO()
-                Image.new('1', (1, 1)).save(buf, format='png')
+                Image.new("1", (1, 1)).save(buf, format="png")
                 return buf.getvalue()
 
             def get(self, v):

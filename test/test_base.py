@@ -1,17 +1,20 @@
 import json
-import yaml
 import unittest
 from unittest.mock import MagicMock
+
+import yaml
 from click.testing import CliRunner
+
 from selenible import cli
 
 
 class TestBase(unittest.TestCase):
-
     def test_load(self):
         for drv in ["dummy", "phantom", "chrome", "firefox"]:
-            cls = cli.loadmodules(drv, ["browser", "ctrl", "screencast",
-                                        "webhook", "imageproc", "content"])
+            cls = cli.loadmodules(
+                drv,
+                ["browser", "ctrl", "screencast", "webhook", "imageproc", "content"],
+            )
             self.assertEqual(cls.__name__.lower(), drv)
             mods = cls.listmodule()
             self.assertTrue("echo" in mods)
@@ -43,36 +46,49 @@ class TestBase(unittest.TestCase):
         runner = CliRunner()
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "yaml"])
         scm = yaml.safe_load(result.output)
-        self.assertEqual(scm.get("$schema", None), "http://json-schema.org/draft-04/schema")
+        self.assertEqual(
+            scm.get("$schema", None), "http://json-schema.org/draft-04/schema"
+        )
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "json"])
         scm = json.loads(result.output)
-        self.assertEqual(scm.get("$schema", None), "http://json-schema.org/draft-04/schema")
+        self.assertEqual(
+            scm.get("$schema", None), "http://json-schema.org/draft-04/schema"
+        )
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "python"])
         scm = eval(result.output)
-        self.assertEqual(scm.get("$schema", None), "http://json-schema.org/draft-04/schema")
+        self.assertEqual(
+            scm.get("$schema", None), "http://json-schema.org/draft-04/schema"
+        )
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "pprint"])
         scm = eval(result.output)
-        self.assertEqual(scm.get("$schema", None), "http://json-schema.org/draft-04/schema")
+        self.assertEqual(
+            scm.get("$schema", None), "http://json-schema.org/draft-04/schema"
+        )
 
         result = runner.invoke(cli.cli, ["dump-schema", "--format", "badformat"])
-        self.assertRegex(result.output, "invalid choice")
+        self.assertRegex(result.output, "is not one of")
 
     def test_dummyoptions(self):
         runner = CliRunner()
-        result = runner.invoke(cli.cli, ["--quiet", "browser-options", "--driver", "dummy"])
+        result = runner.invoke(
+            cli.cli, ["--quiet", "browser-options", "--driver", "dummy"]
+        )
         data = yaml.safe_load(result.output)
         self.assertIn("browser_setting", data)
         self.assertIn("dummyparam", data.get("browser_setting", {}))
-        result = runner.invoke(cli.cli, ["--quiet", "browser-options",
-                                         "--driver", "dummy", "--mode", "doc"])
+        result = runner.invoke(
+            cli.cli,
+            ["--quiet", "browser-options", "--driver", "dummy", "--mode", "doc"],
+        )
         self.assertRegex(result.output, "initialize dummy")
 
     def test_renderdict(self):
         cls = cli.loadmodules("dummy", [])
         drv = cls()
         drv.variables["hello"] = "world"
-        data = drv.render_dict({"test": "replace string {{hello}}",
-                                "test2": ["{{hello}}", "world"]})
+        data = drv.render_dict(
+            {"test": "replace string {{hello}}", "test2": ["{{hello}}", "world"]}
+        )
         self.assertIn("test", data)
         self.assertEqual(data["test"], "replace string world")
         self.assertIn("test2", data)
@@ -81,27 +97,19 @@ class TestBase(unittest.TestCase):
     def test_getlocator(self):
         cls = cli.loadmodules("dummy", [])
         drv = cls()
-        param = {
-            "id": "id1"
-        }
+        param = {"id": "id1"}
         res = drv.getlocator(param)
         self.assertEqual(res[0], "id")
         self.assertEqual(res[1], "id1")
-        param = {
-            "name": "name1"
-        }
+        param = {"name": "name1"}
         res = drv.getlocator(param)
         self.assertEqual(res[0], "name")
         self.assertEqual(res[1], "name1")
-        param = {
-            "link_text": "ltxt1"
-        }
+        param = {"link_text": "ltxt1"}
         res = drv.getlocator(param)
         self.assertEqual(res[0], "link text")
         self.assertEqual(res[1], "ltxt1")
-        param = {
-            "tag": "tag1"
-        }
+        param = {"tag": "tag1"}
         res = drv.getlocator(param)
         self.assertEqual(res[0], "tag name")
         self.assertEqual(res[1], "tag1")
@@ -110,9 +118,7 @@ class TestBase(unittest.TestCase):
         cls = cli.loadmodules("dummy", [])
         drv = cls()
         drv.driver.find_element = MagicMock()
-        param = {
-            "link_text": "ltxt1"
-        }
+        param = {"link_text": "ltxt1"}
         res = drv.findone(param)
         self.assertIsNotNone(res)
         drv.driver.find_element.assert_called_once()
@@ -120,6 +126,7 @@ class TestBase(unittest.TestCase):
     def test_base(self):
         def dummymodule(self, param):
             return "hello"
+
         cls = cli.loadmodules("dummy", [])
         cls.do_dummy = dummymodule
         drv = cls()
@@ -145,17 +152,25 @@ class TestBase(unittest.TestCase):
                     {
                         "name": "hello",
                         "echo": "{{a1}} is {{a2}}",
-                    }, {
+                    },
+                    {
                         "name": "set-retval",
                         "var": {
                             "r": "hello",
                         },
                     },
-                ]
-            }
+                ],
+            },
         }
         drv.run([defun])
         self.assertNotEqual(drv.do2_func1, None)
-        drv.run([{"name": "call func1", "func1": {"a1": "xyz", "a2": "abc"},
-                  "register": "rval1"}])
+        drv.run(
+            [
+                {
+                    "name": "call func1",
+                    "func1": {"a1": "xyz", "a2": "abc"},
+                    "register": "rval1",
+                }
+            ]
+        )
         self.assertEqual(drv.variables.get("rval1", None), "hello")

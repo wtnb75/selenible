@@ -1,31 +1,35 @@
-import sys
-import os
-import subprocess
-import inspect
-import time
+import copy
 import functools
 import getpass
-import copy
+import importlib.resources
+import inspect
 import io
-from logging import getLogger
-
 import json
-import yaml
-import toml
-import jsonpath_rw
+import os
+import subprocess
+import sys
+import time
+from logging import getLogger
 from threading import Lock
-from pkg_resources import resource_stream
+from typing import ClassVar
+
+import jsonpath_rw
+import selenium.common.exceptions
+import toml
+import yaml
+from jinja2 import Template
 from lxml import etree
 from PIL import Image
 from selenium.webdriver.common.by import By
-import selenium.common.exceptions
-from jinja2 import Template
+
 from ..version import VERSION
 
 
 class Base:
     passcmd = "pass"
-    schema = yaml.safe_load(resource_stream(__name__, '../schema/base.yaml'))
+    schema = yaml.safe_load(
+        importlib.resources.files("selenible.schema").joinpath("base.yaml").read_text()
+    )
 
     def __init__(self):
         self.lock = Lock()
@@ -89,18 +93,18 @@ class Base:
         for m in filter(lambda f: f.startswith(pfx), dir(mod)):
             fn = getattr(mod, m)
             if callable(fn):
-                log.debug("register method: %s", m[len(pfx):])
-                name = "do_%s" % (m[len(pfx):])
+                log.debug("register method: %s", m[len(pfx) :])
+                name = f"do_{m[len(pfx) :]}"
                 setattr(cls, name, fn)
-                funcname = m[len(pfx):]
+                funcname = m[len(pfx) :]
                 mtd.append(funcname)
-                scmname = "%s_schema" % (funcname)
+                scmname = f"{funcname}_schema"
                 if hasattr(mod, scmname):
                     scm = getattr(mod, scmname)
                     if isinstance(scm, dict):
                         cls.schema["items"]["properties"][funcname] = scm
             else:
-                log.warn("%s is not callable", fn)
+                log.warning("%s is not callable", fn)
         if len(mtd) != 0:
             log.debug("register methods: %s", "/".join(mtd))
 
@@ -128,8 +132,7 @@ class Base:
             self.log.debug("cmd %s", cmd)
             res = self.run1(cmd)
             if self.step:
-                ans = input(
-                    "step(q=exit, s=screenshot, c=continue, other=continue):")
+                ans = input("step(q=exit, s=screenshot, c=continue, other=continue):")
                 if ans == "q":
                     break
                 elif ans == "s":
@@ -180,13 +183,21 @@ class Base:
         register = self.render_dict(cmd.pop("register", None))
         ignoreerr = self.render_dict(cmd.pop("ignore_error", False))
         if len(cmd) != 1:
-            raise Exception("too many parameters: %s" % (cmd.keys()))
+            raise Exception(f"too many parameters: {cmd.keys()}")
         self.variables["env"] = os.environ
         if self._driver is not None:
             # set driver related variables
-            for v in ("current_url", "page_source", "title",
-                      "window_handles", "session_id", "current_window_handle",
-                      "capabilities", "log_types", "w3c"):
+            for v in (
+                "current_url",
+                "page_source",
+                "title",
+                "window_handles",
+                "session_id",
+                "current_window_handle",
+                "capabilities",
+                "log_types",
+                "w3c",
+            ):
                 try:
                     self.variables[v] = getattr(self.driver, v)
                 except selenium.common.exceptions.WebDriverException:
@@ -199,23 +210,21 @@ class Base:
             self.variables["log"] = {}
             try:
                 for logtype in self.driver.log_types:
-                    self.variables["log"][logtype] = self.driver.get_log(
-                        logtype)
+                    self.variables["log"][logtype] = self.driver.get_log(logtype)
                     # phantomjs case
                     try:
                         if logtype == "har":
                             logdata = json.loads(
-                                self.variables["log"][logtype][0]["message"])
+                                self.variables["log"][logtype][0]["message"]
+                            )
                             self.variables["log"][logtype][0]["message"] = logdata
                     except (KeyError, IndexError, json.decoder.JSONDecodeError):
-                        self.log.debug(
-                            "log.har.0.message does not exists or not json")
-                        pass
+                        self.log.debug("log.har.0.message does not exists or not json")
             except selenium.common.exceptions.WebDriverException:
                 self.log.info("cannot get log types")
-        for c in cmd.keys():
-            mtdname = "do_%s" % (c)
-            mtdname2 = "do2_%s" % (c)
+        for c in cmd:
+            mtdname = f"do_{c}"
+            mtdname2 = f"do2_{c}"
             if hasattr(self, mtdname):
                 mtd = getattr(self, mtdname)
                 param = self.render_dict(cmd.get(c))
@@ -230,12 +239,11 @@ class Base:
                         self.log.info("error(ignored): %s", e)
                     else:
                         self.log.error("error: %s", e)
-                        raise e
+                        raise
                 if register is not None:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res
-                self.log.info("finish %s %f second",
-                              repr(name), time.time() - start)
+                self.log.info("finish %s %f second", repr(name), time.time() - start)
             elif hasattr(self, mtdname2):
                 # 1st class module
                 mtd = getattr(self, mtdname2)
@@ -247,7 +255,7 @@ class Base:
                     self.log.debug("register %s = %s", register, res)
                     self.variables[register] = res
             else:
-                raise Exception("module not found: %s" % (c))
+                raise Exception(f"module not found: {c}")
             time.sleep(delay)
             return res
 
@@ -307,20 +315,22 @@ class Base:
                     doc = inspect.getdoc(getattr(cls, x))
                     if doc is None:
                         doc = "(no document)"
-                    res[x[len(p):]] = doc
+                    res[x[len(p) :]] = doc
         return res
 
     def execute(self, script, args):
         self.driver.execute_script(script, args)
 
-    def runcmd(self, cmd, encoding="utf-8", stdin=subprocess.DEVNULL,
-               stderr=subprocess.DEVNULL):
+    def runcmd(
+        self, cmd, encoding="utf-8", stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    ):
         flag = False
         if isinstance(cmd, str):
             flag = True
         self.log.debug("run(%s) %s", flag, cmd)
-        ret = subprocess.check_output(cmd, stdin=stdin, stderr=stderr,
-                                      shell=flag).decode(encoding)
+        ret = subprocess.check_output(
+            cmd, stdin=stdin, stderr=stderr, shell=flag
+        ).decode(encoding)
         self.log.debug("result: %s", ret)
         return ret
 
@@ -332,13 +342,13 @@ class Base:
         if fp is None:
             return data
         elif isinstance(fp, str):
-            with open(fp, 'wb') as f:
+            with open(fp, "wb") as f:
                 f.write(data)
         else:
             fp.write(data)
         return data
 
-    findmap = {
+    findmap: ClassVar = {
         "id": By.ID,
         "xpath": By.XPATH,
         "linktext": By.LINK_TEXT,
@@ -452,25 +462,27 @@ class Base:
                 elif k in ("not"):
                     res.append(not self.eval_param(v))
                 elif k in ("and", "&", "&&"):
-                    res.append(functools.reduce(
-                        lambda a, b: a and b, self.eval_param(v)))
+                    res.append(
+                        functools.reduce(lambda a, b: a and b, self.eval_param(v))
+                    )
                 elif k in ("or", "|", "||"):
-                    res.append(functools.reduce(
-                        lambda a, b: a or b, self.eval_param(v)))
+                    res.append(
+                        functools.reduce(lambda a, b: a or b, self.eval_param(v))
+                    )
                 elif k in ("xor", "^"):
-                    res.append(functools.reduce(lambda a, b: bool(a) ^ bool(b), self.eval_param(v)))
+                    res.append(
+                        functools.reduce(
+                            lambda a, b: bool(a) ^ bool(b), self.eval_param(v)
+                        )
+                    )
                 elif k in ("add", "sum", "plus", "+"):
-                    res.append(functools.reduce(
-                        lambda a, b: a + b, self.eval_param(v)))
+                    res.append(functools.reduce(lambda a, b: a + b, self.eval_param(v)))
                 elif k in ("sub", "minus", "-"):
-                    res.append(functools.reduce(
-                        lambda a, b: a - b, self.eval_param(v)))
+                    res.append(functools.reduce(lambda a, b: a - b, self.eval_param(v)))
                 elif k in ("mul", "times", "*"):
-                    res.append(functools.reduce(
-                        lambda a, b: a * b, self.eval_param(v)))
+                    res.append(functools.reduce(lambda a, b: a * b, self.eval_param(v)))
                 elif k in ("div", "/"):
-                    res.append(functools.reduce(
-                        lambda a, b: a / b, self.eval_param(v)))
+                    res.append(functools.reduce(lambda a, b: a / b, self.eval_param(v)))
                 elif k in ("selected",):
                     for e in self.findmany(v):
                         res.append(e.is_selected())
@@ -495,16 +507,16 @@ class Base:
                     elif isinstance(v, str):
                         res.append(v in self.variables)
                     else:
-                        raise Exception("invalid argument: %s" % (v))
+                        raise Exception(f"invalid argument: {v}")
                 elif k in ("not_defined", "undefined"):
                     if isinstance(v, (tuple, list)):
                         res.extend([x not in self.variables for x in v])
                     elif isinstance(v, str):
                         res.append(v not in self.variables)
                     else:
-                        raise Exception("invalid argument: %s" % (v))
+                        raise Exception(f"invalid argument: {v}")
                 else:
-                    raise Exception("operator not supported: %s (%s)" % (k, v))
+                    raise Exception(f"operator not supported: {k} ({v})")
             return functools.reduce(lambda a, b: a and b, res)
         return param
 

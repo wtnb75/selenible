@@ -1,10 +1,12 @@
 import io
-import time
 import json
-import yaml
-import toml
+import time
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import toml
+import yaml
+
 from selenible import cli
 
 
@@ -13,7 +15,8 @@ class TestCtrl(unittest.TestCase):
         cls = cli.loadmodules("dummy", [])
         drv = cls()
         import logging
-        drv.log.setLevel(logging.ERROR+10)  # suppress logging
+
+        drv.log.setLevel(logging.ERROR + 10)  # suppress logging
         if isinstance(param, str):
             param = yaml.safe_load(param)
         if isinstance(param, dict):
@@ -27,14 +30,18 @@ class TestCtrl(unittest.TestCase):
             self.assertEqual(drv.variables.get(k), v)
 
     def test_progn(self):
-        self.dotest("""
+        self.dotest(
+            """
         - progn:
           - echo: hello world
           - echo: hello
-        """, "hello")
+        """,
+            "hello",
+        )
 
     def test_var(self):
-        self.dotest("""
+        self.dotest(
+            """
         - var:
             key1: value1
             key2:
@@ -42,10 +49,13 @@ class TestCtrl(unittest.TestCase):
              - value2.2
         - var:
             key1: value1.1
-        """, key1="value1.1")
+        """,
+            key1="value1.1",
+        )
 
     def test_var_if_not(self):
-        self.dotest("""
+        self.dotest(
+            """
         - var_if_not:
             key1: value1
             key2:
@@ -53,85 +63,133 @@ class TestCtrl(unittest.TestCase):
              - value2.2
         - var_if_not:
             key1: value1.1
-        """, key1="value1")
+        """,
+            key1="value1",
+        )
 
     def test_var_from(self):
         data = {"a": "hello", "b": "world"}
         mock = MagicMock(return_value=io.StringIO(yaml.dump(data)))
-        with patch('builtins.open', mock):
-            self.dotest("""
+        with patch("builtins.open", mock):
+            self.dotest(
+                """
             - var_from: {yaml: test.yml}
-            """, a="hello", b="world")
+            """,
+                a="hello",
+                b="world",
+            )
         mock = MagicMock(return_value=io.StringIO(json.dumps(data)))
-        with patch('builtins.open', mock):
-            self.dotest("""
+        with patch("builtins.open", mock):
+            self.dotest(
+                """
             - var_from: {json: test.json}
-            """, a="hello", b="world")
+            """,
+                a="hello",
+                b="world",
+            )
         mock = MagicMock(return_value=io.StringIO(toml.dumps(data)))
-        with patch('builtins.open', mock):
-            self.dotest("""
+        with patch("builtins.open", mock):
+            self.dotest(
+                """
             - var_from: {toml: test.toml}
-            """, a="hello", b="world")
+            """,
+                a="hello",
+                b="world",
+            )
 
     def test_var_from_if_not(self):
         data = {"a": "hello", "b": "world"}
         mock = MagicMock(return_value=io.StringIO(yaml.dump(data)))
-        with patch('builtins.open', mock):
-            self.dotest("""
+        with patch("builtins.open", mock):
+            self.dotest(
+                """
             - var:
                 a: help
             - var_from_if_not: {yaml: test.yml}
-            """, a="help", b="world")
+            """,
+                a="help",
+                b="world",
+            )
         mock = MagicMock(return_value=io.StringIO(json.dumps(data)))
-        with patch('builtins.open', mock):
-            self.dotest("""
+        with patch("builtins.open", mock):
+            self.dotest(
+                """
             - var:
                 a: help
             - var_from_if_not: {json: test.json}
-            """, a="help", b="world")
+            """,
+                a="help",
+                b="world",
+            )
         mock = MagicMock(return_value=io.StringIO(toml.dumps(data)))
-        with patch('builtins.open', mock):
-            self.dotest("""
+        with patch("builtins.open", mock):
+            self.dotest(
+                """
             - var:
                 a: help
             - var_from_if_not: {toml: test.toml}
-            """, a="help", b="world")
+            """,
+                a="help",
+                b="world",
+            )
 
     def test_echo(self):
-        self.dotest("""
+        self.dotest(
+            """
         - name: debug message
           echo: hello
-        """, "hello")
-        self.dotest("""
+        """,
+            "hello",
+        )
+        self.dotest(
+            """
         - name: debug message
           echo:
             text: hello
-        """, "hello")
-        self.dotest("""
+        """,
+            "hello",
+        )
+        self.dotest(
+            """
         - name: debug message
           echo: hello
           register: v
-        """, "hello", v="hello")
+        """,
+            "hello",
+            v="hello",
+        )
 
     def test_runcmd(self):
-        self.dotest("""
+        self.dotest(
+            """
         - runcmd: echo hello
-        """, "hello\n")
-        self.dotest("""
+        """,
+            "hello\n",
+        )
+        self.dotest(
+            """
         - runcmd:
             cmd: echo hello
             stdin: wow
-        """, "hello\n")
-        self.dotest("""
+        """,
+            "hello\n",
+        )
+        self.dotest(
+            """
         - runcmd:
             cmd: echo hello
-        """, "hello\n")
-        self.dotest("""
+        """,
+            "hello\n",
+        )
+        self.dotest(
+            """
         - runcmd:
             cmd: echo hello
             stderr: /dev/null
             stdout: /dev/null
-        """, "hello\n")
+        """,
+            "hello\n",
+        )
 
     def test_runcmd_error(self):
         with self.assertRaisesRegex(Exception, "not supported"):
@@ -182,12 +240,19 @@ class TestCtrl(unittest.TestCase):
             """)
 
     def test_set(self):
-        self.dotest("""
+        self.dotest(
+            """
         - set:
             text: hello
-        """, "hello")
-        self.dotest("""
+        """,
+            "hello",
+        )
+        self.dotest(
+            """
         - set:
             text: hello
           register: v1
-        """, "hello", v1="hello")
+        """,
+            "hello",
+            v1="hello",
+        )

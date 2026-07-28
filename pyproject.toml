@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "selenible"
+dynamic = ["version"]
+description = "selenium like ansible"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Watanabe Takashi", email = "wtnb75@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Testing",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "selenium",
+    "click",
+    "PyYAML",
+    "jinja2",
+    "texttable",
+    "jsonpath-rw",
+    "toml",
+    "pillow",
+    "jsonschema",
+    "lxml",
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/wtnb75/selenible"
+
+[project.scripts]
+selenible = "selenible.cli:cli"
+
+[tool.hatch.version]
+path = "selenible/version.py"
+pattern = "VERSION = ['\"](?P<version>[^'\"]+)['\"]"
+
+[tool.hatch.build.targets.wheel]
+packages = ["selenible"]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-github-actions-annotate-failures",
+    "ruff",
+    "pdoc",
+    "ipykernel",
+]
+
+[tool.ruff]
+# example/ is example scripts (out of scope for this migration) and contains
+# example/helloworld.ipynb, a git-lfs pointer file in this checkout (not the
+# real notebook JSON) that ruff's notebook parser can't handle.
+extend-exclude = ["example"]
+
+[tool.ruff.lint]
+# TRY002/TRY004: this codebase raises plain `Exception(...)` pervasively
+# throughout (drivers/base.py, modules/*) as its long-standing, intentional
+# error-signaling style, including for invalid-type checks. Rebuilding a
+# custom exception hierarchy is a behavioral change out of scope for a
+# packaging migration; suppressed rather than mechanically "fixed".
+ignore = ["TRY002", "TRY004"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
+addopts = "--cov-report=html:cover --cov-report=term --cov-branch --cov-reset --cov=selenible --doctest-modules"

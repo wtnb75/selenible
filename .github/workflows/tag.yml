@@ -1,34 +1,30 @@
-name: main
+name: tag
 
 on:
   push:
-    branches: [main]
-
-permissions:
-  pages: write
-  id-token: write
+    tags:
+    - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - name: versioning
+      run: "echo \"VERSION = '${GITHUB_REF##*/v}'\" > selenible/version.py"
     - uses: wtnb75/actions/python@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
     - uses: wtnb75/actions/ruff@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
     - uses: wtnb75/actions/pytest@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
-    - uses: wtnb75/actions/wheel@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+    - id: wheel
+      uses: wtnb75/actions/wheel@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
     - id: pdoc
       uses: wtnb75/actions/pdoc@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
       with:
         output-dir: docs
         module: selenible
         other-options: --docformat google
-    - uses: wtnb75/actions/merge-pages@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+    - uses: wtnb75/actions/pypi-upload@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
       with:
-        dirs: "cover docs"
-        #pydist: dist
-    - name: Setup Pages
-      uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-    - name: deploy pages
-      uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
-      id: deployment
+        username: ${{ secrets.TWINE_USERNAME }}
+        password: ${{ secrets.TWINE_PASSWORD }}
+        file: dist/${{ steps.wheel.outputs.filename }}

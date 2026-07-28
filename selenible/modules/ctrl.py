@@ -1,14 +1,15 @@
-import time
 import json
-import yaml
-import toml
-import tempfile
-import urllib.parse
-import requests
-from subprocess import DEVNULL
-from lxml import etree
 import logging.config
+import tempfile
+import time
+import urllib.parse
+from contextlib import ExitStack
+from subprocess import DEVNULL
 
+import requests
+import toml
+import yaml
+from lxml import etree
 
 progn_schema = yaml.safe_load("""
 type: array
@@ -133,29 +134,26 @@ def Base_runcmd(self, param):
         stdout = param.get("stdout", None)
         stderr = param.get("stderr", None)
         if cmd is None:
-            raise Exception("missing cmd: %s" % (param))
-        if stdin is not None:
-            sin = tempfile.TemporaryFile()
-            sin.write(stdin.encode("utf-8"))
-            sin.seek(0)
-        else:
-            sin = DEVNULL
-        if stderr is not None:
-            serr = open(stderr)
-        else:
-            serr = DEVNULL
-        out = self.runcmd(cmd, stdin=sin, stderr=serr)
-        if serr != DEVNULL:
-            serr.close()
-        if sin != DEVNULL:
-            sin.close()
+            raise Exception(f"missing cmd: {param}")
+        with ExitStack() as stack:
+            if stdin is not None:
+                sin = stack.enter_context(tempfile.TemporaryFile())
+                sin.write(stdin.encode("utf-8"))
+                sin.seek(0)
+            else:
+                sin = DEVNULL
+            if stderr is not None:
+                serr = stack.enter_context(open(stderr))
+            else:
+                serr = DEVNULL
+            out = self.runcmd(cmd, stdin=sin, stderr=serr)
         self.log.info("result: %s", out)
         if stdout is not None:
             with open(stdout, "w") as f:
                 f.write(out)
         return out
     else:
-        raise Exception("runcmd: param not supported: %s" % (param))
+        raise Exception(f"runcmd: param not supported: {param}")
 
 
 echo_schema = yaml.safe_load("""
@@ -226,7 +224,7 @@ def Base_include(self, param):
             self.lock.acquire()
         return ret
     else:
-        raise Exception("cannot load: %s" % (param))
+        raise Exception(f"cannot load: {param}")
 
 
 def Base_config(self, param):
@@ -244,10 +242,10 @@ def Base_config(self, param):
         self.log.debug("implicitly wait %s sec", param.get("wait"))
         self.driver.implicitly_wait(param.get("wait"))
     if "cookie" in param:
-        self.log.debug("cookie update: %s" % (param.get("cookie", {}).keys()))
+        self.log.debug("cookie update: {}".format(param.get("cookie", {}).keys()))
         self.driver.add_cookie(param.get("cookie"))
     if "window" in param:
-        self.log.info("window size update: %s" % (param.get("window", {})))
+        self.log.info("window size update: {}".format(param.get("window", {})))
         win = param.get("window")
         if win.get("maximize", False):
             self.driver.maximize_window()
@@ -291,7 +289,7 @@ def Base_assert(self, param):
     """
     if not self.eval_param(param):
         self.log.error("condition failed: %s", param)
-        raise Exception("condition failed: %s" % (param))
+        raise Exception(f"condition failed: {param}")
 
 
 assert_not_schema = assert_schema
@@ -307,7 +305,7 @@ def Base_assert_not(self, param):
     """
     if self.eval_param(param):
         self.log.error("condition(not) failed: %s", param)
-        raise Exception("condition(not) failed: %s" % (param))
+        raise Exception(f"condition(not) failed: {param}")
 
 
 xslt_schema = yaml.safe_load("""
@@ -344,11 +342,10 @@ def Base_xslt(self, param):
                 rst.append(str(proc(p)))
         if output is not None:
             with open(output, "w") as f:
-                for x in rst:
-                    f.write(str(x))
+                f.writelines(str(x) for x in rst)
         return rst
     else:
-        raise Exception("invalid parameter: %s" % (param))
+        raise Exception(f"invalid parameter: {param}")
 
 
 download_schema = yaml.safe_load("""
@@ -377,7 +374,7 @@ def Base_download(self, param):
     """
     url = param.get("url", None)
     if url is None:
-        raise Exception("url mut set: %s" % (param))
+        raise Exception(f"url mut set: {param}")
     parsed_url = urllib.parse.urlparse(url)
     self.log.debug("URL parsed: %s", parsed_url)
     method = param.get("method", "get")
@@ -389,9 +386,13 @@ def Base_download(self, param):
     sess = requests.Session()
     output = param.get("output", None)
     for ck in cookies:
-        sess.cookies.set(ck.get("name"), ck.get("value"),
-                         path=ck.get("path", "/"), domain=ck.get("domain", ""),
-                         secure=ck.get("secure", False))
+        sess.cookies.set(
+            ck.get("name"),
+            ck.get("value"),
+            path=ck.get("path", "/"),
+            domain=ck.get("domain", ""),
+            secure=ck.get("secure", False),
+        )
     resp = sess.request(method, url, params=query, headers=headers, timeout=timeout)
     if output is not None:
         with open(output, "wb") as f:

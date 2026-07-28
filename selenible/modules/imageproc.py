@@ -1,17 +1,27 @@
-import os
-import time
 import math
-import yaml
+import os
 import tarfile
+import time
 import zipfile
-from PIL import Image, ImageChops, ImageFilter, ImageEnhance, ImageFont, ImageDraw, ImageColor, ImageOps
+
+import yaml
+from PIL import (
+    Image,
+    ImageChops,
+    ImageColor,
+    ImageDraw,
+    ImageEnhance,
+    ImageFilter,
+    ImageFont,
+    ImageOps,
+)
 
 
 def inout_fname(param):
     input_filename = param.get("input")
     output_filename = param.get("output", input_filename)
     if input_filename is None or output_filename is None:
-        raise Exception("please set input and output: %s" % (param))
+        raise Exception(f"please set input and output: {param}")
     return input_filename, output_filename
 
 
@@ -49,7 +59,7 @@ def Base_image_crop(self, param):
         msec = math.modf(ts)[0] * 1000
         filename = param.get("prefix", "")
         filename += time.strftime("%Y%m%d_%H%M%S", time.localtime(ts))
-        filename += "_%03d.png" % (msec)
+        filename += f"_{int(msec):03d}.png"
         self.log.debug("filename generated %s", filename)
     size = param.get("size", "auto")
     if size == "auto":
@@ -67,7 +77,7 @@ def Base_image_crop(self, param):
         crop = img.crop(size)
         crop.save(filename)
     else:
-        raise Exception("not implemented yet: crop %s %s" % (filename, size))
+        raise Exception(f"not implemented yet: crop {filename} {size}")
 
 
 image_optimize_schema = yaml.safe_load("""
@@ -90,7 +100,7 @@ def Base_image_optimize(self, param):
     self.log.info("optimize image: %s -> %s", input_filename, filename)
     before = os.stat(input_filename)
     if before.st_size == 0:
-        raise Exception("image size is zero: %s" % (input_filename))
+        raise Exception(f"image size is zero: {input_filename}")
     if filename != input_filename:
         cmd = [command, "-o9", "-out", filename, input_filename]
     else:
@@ -99,9 +109,14 @@ def Base_image_optimize(self, param):
         sout = self.runcmd(cmd)
         self.log.debug("result: %s", sout)
         after = os.stat(filename)
-        self.log.info("%s: before=%d, after=%d, reduce %d bytes (%.1f %%)", filename,
-                      before.st_size, after.st_size, before.st_size - after.st_size,
-                      100.0 * (before.st_size - after.st_size) / before.st_size)
+        self.log.info(
+            "%s: before=%d, after=%d, reduce %d bytes (%.1f %%)",
+            filename,
+            before.st_size,
+            after.st_size,
+            before.st_size - after.st_size,
+            100.0 * (before.st_size - after.st_size) / before.st_size,
+        )
     except FileNotFoundError as e:
         self.log.info("cannot exec %s: %s", cmd, e)
         if filename != input_filename:
@@ -155,7 +170,7 @@ def Base_image_resize(self, param):
         size = (int(img.width * pctX / 100), int(img.height * pctY / 100))
     algostr = param.get("algorithm", "NEAREST")
     if not hasattr(Image, algostr):
-        raise Exception("algorighm not found: %s" % (algostr))
+        raise Exception(f"algorighm not found: {algostr}")
     rst = img.resize(tuple(size), getattr(Image, algostr))
     rst.save(filename)
 
@@ -204,11 +219,11 @@ def Base_image_filter(self, param):
     img = Image.open(input_filename)
     for f in param.get("filter", []):
         if not isinstance(f, dict):
-            raise Exception("invalid parameter: %s" % (f))
+            raise Exception(f"invalid parameter: {f}")
         for k, v in f.items():
             fn = getattr(ImageFilter, k)
             if not callable(fn):
-                raise Exception("filter %s(%s) not found" % (k, v))
+                raise Exception(f"filter {k}({v}) not found")
             self.log.debug("filter %s %s", k, v)
             if v is None:
                 img = img.filter(fn)
@@ -231,8 +246,8 @@ image_convert_schema = {
                     "type": "string",
                     "enum": Image.MODES,
                 }
-            }
-        }
+            },
+        },
     ]
 }
 
@@ -248,7 +263,7 @@ def Base_image_convert(self, param):
     img = Image.open(input_filename)
     mode = param.get("mode")
     if mode is None:
-        raise Exception("invalid parameter: %s" % (param))
+        raise Exception(f"invalid parameter: {param}")
     img = img.convert(mode)
     img.save(filename)
 
@@ -266,11 +281,11 @@ def Base_image_chops(self, param):
     img = Image.open(input_filename)
     for f in param.get("filter", []):
         if not isinstance(f, dict):
-            raise Exception("invalid parameter: %s" % (param))
+            raise Exception(f"invalid parameter: {param}")
         for k, v in f.items():
             fn = getattr(ImageChops, k)
             if not callable(fn):
-                raise Exception("chop %s(%s) not found" % (k, v))
+                raise Exception(f"chop {k}({v}) not found")
             self.log.debug("chop %s %s", k, v)
             if isinstance(v, (list, tuple)):
                 fname = v[0]
@@ -296,11 +311,11 @@ def Base_image_enhance(self, param):
     img = Image.open(input_filename)
     for f in param.get("filter", []):
         if not isinstance(f, dict):
-            raise Exception("invalid parameter: %s" % (param))
+            raise Exception(f"invalid parameter: {param}")
         for k, v in f.items():
             fn = getattr(ImageEnhance, k)
             if not callable(fn):
-                raise Exception("enhance %s(%s) not found" % (k, v))
+                raise Exception(f"enhance {k}({v}) not found")
             self.log.debug("enhance %s %s", k, v)
             enhancer = fn(img)
             img = enhancer.enhance(v)
@@ -321,11 +336,11 @@ def Base_image_ops(self, param):
     img = Image.open(input_filename)
     for f in param.get("filter", []):
         if not isinstance(f, dict):
-            raise Exception("invalid parameter: %s" % (param))
+            raise Exception(f"invalid parameter: {param}")
         for k, v in f.items():
             fn = getattr(ImageOps, k)
             if not callable(fn):
-                raise Exception("ops %s(%s) not found" % (k, v))
+                raise Exception(f"ops {k}({v}) not found")
             self.log.debug("ops %s %s", k, v)
             img = fn(img, *v)
     img.save(filename)
@@ -335,18 +350,18 @@ def Base_image_archive(self, param):
     input_filename, filename = inout_fname(param)
     delflag = param.get("delete", True)
     assert input_filename != filename
-    base, ext = os.path.splitext(filename)
+    _base, ext = os.path.splitext(filename)
     if ext in (".zip", ".cbz"):
-        with zipfile.ZipFile(filename, 'a') as zf:
+        with zipfile.ZipFile(filename, "a") as zf:
             self.log.debug("zip %s %s", filename, input_filename)
             zf.write(input_filename)
             if delflag:
                 os.unlink(input_filename)
     elif ext in (".tar"):
-        with tarfile.open(filename, 'a') as tf:
+        with tarfile.open(filename, "a") as tf:
             self.log.debug("tar %s %s", filename, input_filename)
             tf.add(input_filename)
             if delflag:
                 os.unlink(input_filename)
     else:
-        raise Exception("not implemented yet: archive %s" % (param,))
+        raise Exception(f"not implemented yet: archive {param}")

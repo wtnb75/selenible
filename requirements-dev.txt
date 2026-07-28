@@ -1,6 +1,0 @@
-nose
-coverage
-ipykernel
-wheel
-pip2pi
-twine

@@ -1,6 +1,7 @@
-
 import urllib.parse
+
 from selenium import webdriver
+
 from . import Base
 
 
@@ -12,7 +13,7 @@ class Phantom(Base):
     def printpdf(self, output_fn):
         page_format = 'this.paperSize = {format: "A4", orientation: "portrait" };'
         self.execute(page_format, [])
-        render = '''this.render("{}")'''.format(output_fn)
+        render = f'''this.render("{output_fn}")'''
         self.execute(render, [])
 
     def do_config(self, param):
@@ -51,16 +52,13 @@ class Phantom(Base):
                 if u.scheme in ("", b""):
                     self.log.debug("proxy not set. pass")
                     return
-                proxyscript = '''setProxy("{}", {}, "{}", "{}", "{}")'''.format(
-                    u.hostname, u.port, ptype, u.username, u.password)
+                proxyscript = f'''setProxy("{u.hostname}", {u.port}, "{ptype}", "{u.username}", "{u.password}")'''
             elif host is None:
-                proxyscript = '''setProxy("")'''
+                proxyscript = """setProxy("")"""
             elif username is not None and password is not None:
-                proxyscript = '''setProxy("{}", {}, "{}", "{}", "{}")'''.format(
-                    host, port, ptype, username, password)
+                proxyscript = f'''setProxy("{host}", {port}, "{ptype}", "{username}", "{password}")'''
             else:
-                proxyscript = '''setProxy("{}", {}, "{}")'''.format(
-                    host, port, ptype)
+                proxyscript = f'''setProxy("{host}", {port}, "{ptype}")'''
             if with_page:
                 prefix = "page"
             else:
