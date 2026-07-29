@@ -1,17 +1,38 @@
-import sys
+import inspect
+import json
 import os
 import pprint
-import inspect
-from logging import getLogger, DEBUG, INFO, WARN, captureWarnings
-from logging import FileHandler, StreamHandler, Formatter
+import sys
+from logging import (
+    DEBUG,
+    INFO,
+    WARNING,
+    FileHandler,
+    Formatter,
+    StreamHandler,
+    captureWarnings,
+    getLogger,
+)
 
-import json
-import yaml
 import click
 import jsonschema
+import yaml
+
+from .drivers import (
+    Android,
+    Base,
+    Chrome,
+    Dummy,
+    Edge,
+    Firefox,
+    Ie,
+    Opera,
+    Phantom,
+    Remote,
+    Safari,
+    WebKitGTK,
+)
 from .version import VERSION
-from .drivers import Base, Phantom, Chrome, Firefox, Safari, Edge
-from .drivers import WebKitGTK, Dummy, Ie, Opera, Android, Remote
 
 drvmap = {
     "phantom": Phantom,
@@ -42,7 +63,7 @@ def cli(ctx, verbose, quiet, logfile):
     if verbose:
         lg.setLevel(DEBUG)
     elif quiet:
-        lg.setLevel(WARN)
+        lg.setLevel(WARNING)
     else:
         lg.setLevel(INFO)
     if logfile is not None:
@@ -76,8 +97,8 @@ def loadmodules(driver, extension):
 @click.option("--step", is_flag=True, default=False)
 @click.option("--screenshot", is_flag=True, default=False)
 @click.option("-e", multiple=True)
-@click.option("--var", type=click.File('r'), required=False)
-@click.argument("input", type=click.File('r'), required=False)
+@click.option("--var", type=click.File("r"), required=False)
+@click.argument("input", type=click.File("r"), required=False)
 def run(input, driver, step, screenshot, var, e, extension):
     captureWarnings(True)
     drvcls = loadmodules(driver, extension)
@@ -96,7 +117,7 @@ def run(input, driver, step, screenshot, var, e, extension):
                 k, v = x.split("=", 1)
                 try:
                     b.variables[k] = json.loads(v)
-                except Exception:
+                except Exception:  # noqa: BLE001 -- any parse failure means "treat as plain string"
                     b.variables[k] = v
         b.step = step
         b.save_every = screenshot
@@ -112,6 +133,7 @@ def run(input, driver, step, screenshot, var, e, extension):
 def list_modules(driver, extension, pattern):
     drvcls = loadmodules(driver, extension)
     from texttable import Texttable
+
     table = Texttable()
     table.set_cols_align(["l", "l"])
     # table.set_deco(Texttable.HEADER)
@@ -127,7 +149,9 @@ def list_modules(driver, extension, pattern):
 @cli.command("dump-schema", help="dump json schema")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
 @click.option("--extension", "-x", multiple=True)
-@click.option("--format", default="yaml", type=click.Choice(["yaml", "json", "python", "pprint"]))
+@click.option(
+    "--format", default="yaml", type=click.Choice(["yaml", "json", "python", "pprint"])
+)
 def dump_schema(driver, extension, format):
     drvcls = loadmodules(driver, extension)
     if format == "yaml":
@@ -139,13 +163,13 @@ def dump_schema(driver, extension, format):
     elif format == "pprint":
         pprint.pprint(drvcls.schema)
     else:
-        raise Exception("unknown format: %s" % (format))
+        raise Exception(f"unknown format: {format}")
 
 
 @cli.command(help="validate by json schema")
 @click.option("--driver", default="phantom", type=click.Choice(drvmap.keys()))
 @click.option("--extension", "-x", multiple=True)
-@click.argument("input", type=click.File('r'), required=False)
+@click.argument("input", type=click.File("r"), required=False)
 def validate(driver, extension, input):
     drvcls = loadmodules(driver, extension)
     prog = yaml.safe_load(input)

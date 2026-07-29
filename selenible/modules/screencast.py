@@ -1,7 +1,8 @@
 import io
-import time
 import threading
+import time
 from logging import getLogger
+
 from PIL import Image
 
 
@@ -44,10 +45,20 @@ class screencast(threading.Thread):
         if len(self.frames) == 0:
             raise Exception("no image found")
         d = 1000 * (self.finished_ts - self.start_ts) / len(self.frames) / speed
-        self.log.info("%d frames, %d sec. duration=%f(ms)", len(
-            self.frames), self.finished_ts - self.start_ts, d)
-        self.frames[0].save(output_fn, save_all=True, duration=d, optimize=optimize,
-                            loop=loop, append_images=self.frames[1:])
+        self.log.info(
+            "%d frames, %d sec. duration=%f(ms)",
+            len(self.frames),
+            self.finished_ts - self.start_ts,
+            d,
+        )
+        self.frames[0].save(
+            output_fn,
+            save_all=True,
+            duration=d,
+            optimize=optimize,
+            loop=loop,
+            append_images=self.frames[1:],
+        )
 
 
 scr_th = None
@@ -68,8 +79,9 @@ def Base_screencast(self, param):
     if isinstance(param, dict) and "output" not in param:
         if scr_th is not None:
             raise Exception("screencast already working")
-        scr_th = screencast(self, param.get("crop"), param.get("interval"),
-                            param.get("thumbnail"))
+        scr_th = screencast(
+            self, param.get("crop"), param.get("interval"), param.get("thumbnail")
+        )
         scr_th.start()
         return "started"
     if scr_th is None:
@@ -78,7 +90,7 @@ def Base_screencast(self, param):
     scr_th.stop = True
     scr_th.join(2)
     if scr_th.is_alive():
-        self.log.warn("cannot stop screencast thread.")
+        self.log.warning("cannot stop screencast thread.")
     else:
         self.log.debug("done join. saving")
     if isinstance(param, str):
@@ -88,9 +100,11 @@ def Base_screencast(self, param):
         output = param.get("output")
         assert output is not None
         self.log.info("save to %s", output)
-        scr_th.savefile(output,
-                        optimize=param.get("optimize", False),
-                        loop=param.get("loop", 0),
-                        speed=param.get("speed", 1.0))
+        scr_th.savefile(
+            output,
+            optimize=param.get("optimize", False),
+            loop=param.get("loop", 0),
+            speed=param.get("speed", 1.0),
+        )
     scr_th = None
     return "finished"

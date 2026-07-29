@@ -1,6 +1,7 @@
 import json
-import yaml
+
 import requests
+import yaml
 
 webhook_schema = yaml.safe_load("""
 type: object
@@ -35,6 +36,12 @@ def Base_webhook(self, params):
     sess = requests.Session()
     for name, value in cookies.items():
         sess.cookies.set(name, value)
-    resp = sess.request(method, url, params=query, headers=headers, timeout=timeout,
-                        data=json.dumps(body, ensure_ascii=False))
+    resp = sess.request(
+        method,
+        url,
+        params=query,
+        headers=headers,
+        timeout=timeout,
+        data=json.dumps(body, ensure_ascii=False),
+    )
     return resp.json()

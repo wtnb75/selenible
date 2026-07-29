@@ -1,13 +1,13 @@
 import math
 import time
 import urllib.parse
+
 import yaml
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.alert import Alert
+from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.select import Select
-
+from selenium.webdriver.support.ui import WebDriverWait
 
 open_schema = yaml.safe_load("""
 oneOf:
@@ -36,7 +36,7 @@ def Base_open(self, param):
     elif isinstance(param, dict):
         url = param.get("url", None)
         if url is None:
-            raise Exception("cannot find open.url: %s" % (param))
+            raise Exception(f"cannot find open.url: {param}")
         query = param.get("query", {})
         qstr = urllib.parse.urlencode(query)
         if qstr != "":
@@ -92,15 +92,15 @@ def Base_screenshot(self, param):
             msec = math.modf(ts)[0] * 1000
             output = param.get("prefix", "")
             output += time.strftime("%Y%m%d_%H%M%S", time.localtime(ts))
-            output += "_%03d.png" % (msec)
+            output += f"_{int(msec):03d}.png"
             self.log.debug("filename generated %s", output)
         self.saveshot(output)
         elem = self.findmany2one(param)
         if elem is not None:
-            x1 = elem.location['x']
-            y1 = elem.location['y']
-            x2 = x1 + elem.size['width']
-            y2 = y1 + elem.size['height']
+            x1 = elem.location["x"]
+            y1 = elem.location["y"]
+            x2 = x1 + elem.size["width"]
+            y2 = y1 + elem.size["height"]
             nparam = {
                 "input": output,
                 "size": [x1, y1, x2, y2],
@@ -163,8 +163,13 @@ def Base_submit(self, param):
 def Base_waitfor(self, param):
     waiter = WebDriverWait(self.driver, param.get("timeout", 10))
     simple_fn = [
-        "title_is", "title_contains", "url_changes", "url_contains", "url_matches",
-        "url_to_be", "number_of_windows_to_be",
+        "title_is",
+        "title_contains",
+        "url_changes",
+        "url_contains",
+        "url_matches",
+        "url_to_be",
+        "number_of_windows_to_be",
     ]
     if "alert_is_present" in param:
         return waiter.until(expected_conditions.alert_is_present())
@@ -172,17 +177,21 @@ def Base_waitfor(self, param):
         if f in param:
             return waiter.until(getattr(expected_conditions, f)(param.get(f)))
     locator_fn = [
-        "element_located_to_be_selected", "element_to_be_clickable",
+        "element_located_to_be_selected",
+        "element_to_be_clickable",
         "frame_to_be_available_and_switch_to_it",
-        "invisibility_of_element_located", "presence_of_all_elements_located",
-        "presence_of_element_located", "visibility_of_all_elements_located",
-        "visibility_of_any_elements_located", "visibility_of_element_located"
+        "invisibility_of_element_located",
+        "presence_of_all_elements_located",
+        "presence_of_element_located",
+        "visibility_of_all_elements_located",
+        "visibility_of_any_elements_located",
+        "visibility_of_element_located",
     ]
     for f in locator_fn:
         if f in param:
             loc = self.getlocator(param)
             if len(loc) != 2 or loc[0] is None:
-                raise Exception("locator not set: %s" % (param))
+                raise Exception(f"locator not set: {param}")
             return waiter.until(getattr(expected_conditions, f)(loc))
     locator_and_fn = {
         "text_to_be_present_in_element": None,
@@ -196,15 +205,15 @@ def Base_waitfor(self, param):
             else:
                 arg = param.get(v)
             if arg is None:
-                raise Exception("missing argument %s: param=%s" % (v, param))
+                raise Exception(f"missing argument {v}: param={param}")
             loc = self.getlocator(param)
             if len(loc) != 2 or loc[0] is None:
-                raise Exception("locator not set: %s" % (param))
+                raise Exception(f"locator not set: {param}")
             return waiter.until(getattr(expected_conditions, f)(loc, arg))
     # other conditions:
     #  element_selection_state_to_be, element_to_be_selected,
     #  new_window_is_opened, staleness_of, visibility_of
-    raise Exception("not implemented: param=%s" % (param))
+    raise Exception(f"not implemented: param={param}")
 
 
 script_schema = yaml.safe_load("""
@@ -236,7 +245,7 @@ def Base_script(self, param):
         with open(fname) as f:
             self.driver.execute_script(f.read())
     else:
-        raise Exception("parameter error: %s" % (param))
+        raise Exception(f"parameter error: {param}")
 
 
 history_schema = yaml.safe_load("""
@@ -267,7 +276,7 @@ def Base_history(self, param):
             elif d in refresh:
                 self.driver.refresh()
             else:
-                raise Exception("no such direction: %s" % (d))
+                raise Exception(f"no such direction: {d}")
     elif isinstance(param, str):
         if param in fwd:
             self.driver.forward()
@@ -276,9 +285,9 @@ def Base_history(self, param):
         elif param in refresh:
             self.driver.refresh()
         else:
-            raise Exception("no such direction: %s" % (param))
+            raise Exception(f"no such direction: {param}")
     else:
-        raise Exception("history: not supported direction: %s" % (param))
+        raise Exception(f"history: not supported direction: {param}")
 
 
 sendKeys_schema = yaml.safe_load("""
@@ -306,7 +315,7 @@ def Base_sendKeys(self, param):
     clear = param.get("clear", False)
     txt = self.getvalue(param)
     if txt is None:
-        raise Exception("text not set: param=%s" % (param))
+        raise Exception(f"text not set: param={param}")
     elem = self.findmany2one(param)
     if clear:
         elem.clear()
@@ -332,7 +341,7 @@ def Base_setTextValue(self, param):
     """
     txt = self.getvalue(param)
     if txt is None:
-        raise Exception("text not set: param=%s" % (param))
+        raise Exception(f"text not set: param={param}")
     elem = self.findmany2one(param)
     self.driver.execute_script("arguments[0].value = arguments[1];", elem, txt)
     return self.return_element(param, elem)
@@ -557,7 +566,7 @@ def Base_select(self, param):
     """
     elem = self.findone(param)
     if elem is None:
-        raise Exception("element not found: %s" % (param))
+        raise Exception(f"element not found: {param}")
     flag = param.get("deselect", False)
     sel = Select(elem)
     if "by_index" in param:
@@ -613,7 +622,7 @@ anyOf:
 
 
 def scrollto(fn, x, y):
-    return "window.%s(%s,%s)" % (fn, x, y)
+    return f"window.{fn}({x},{y})"
 
 
 def Base_scroll(self, param):
@@ -637,16 +646,28 @@ def Base_scroll(self, param):
     xmax, ymax = "document.body.scrollWidth", "document.body.scrollHeight"
 
     relative = param.get("relative")
-    if relative is not None and isinstance(relative, (tuple, list)) and len(relative) == 2:
+    if (
+        relative is not None
+        and isinstance(relative, (tuple, list))
+        and len(relative) == 2
+    ):
         self.driver.execute_script(scrollto("scrollBy", relative[0], relative[1]))
     absolute = param.get("absolute")
-    if absolute is not None and isinstance(absolute, (tuple, list)) and len(absolute) == 2:
+    if (
+        absolute is not None
+        and isinstance(absolute, (tuple, list))
+        and len(absolute) == 2
+    ):
         self.driver.execute_script(scrollto("scrollTo", absolute[0], absolute[1]))
     percent = param.get("percent")
     if percent is not None and isinstance(percent, (tuple, list)) and len(percent) == 2:
-        self.driver.execute_script(scrollto("scrollTo",
-                                            "%s*%f" % (xmax, percent[0] / 100.0),
-                                            "%s*%f" % (ymax, percent[1] / 100.0)))
+        self.driver.execute_script(
+            scrollto(
+                "scrollTo",
+                f"{xmax}*{percent[0] / 100.0:f}",
+                f"{ymax}*{percent[1] / 100.0:f}",
+            )
+        )
     pos = param.get("position")
     if pos in ("bottom", "bottomleft"):
         self.driver.execute_script(scrollto("scrollTo", 0, ymax))
@@ -682,7 +703,7 @@ def Base_browser_setting(self, params):
                 getattr(opt, k)(v)
             else:
                 self.log.error("no such option: %s(%s): %s", k, v, dir(opt))
-                raise Exception("no such option: %s" % (k))
+                raise Exception(f"no such option: {k}")
         self.browser_args["options"] = opt
     if restart:
         self.do_shutdown({})
