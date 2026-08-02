@@ -12,13 +12,13 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: versioning
       run: "echo \"VERSION = '${GITHUB_REF##*/v}'\" > selenible/version.py"
-    - uses: wtnb75/actions/python@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
-    - uses: wtnb75/actions/ruff@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
-    - uses: wtnb75/actions/pytest@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+    - uses: wtnb75/actions/python@v1
+    - uses: wtnb75/actions/ruff@v1
+    - uses: wtnb75/actions/pytest@v1
     - id: wheel
-      uses: wtnb75/actions/wheel@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+      uses: wtnb75/actions/wheel@v1
     - id: pdoc
-      uses: wtnb75/actions/pdoc@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+      uses: wtnb75/actions/pdoc@v1
       with:
         output-dir: docs
         module: selenible
