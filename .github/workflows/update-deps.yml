@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-    - uses: wtnb75/actions/python@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
-    - uses: wtnb75/actions/pyupdate@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+    - uses: wtnb75/actions/python@v1
+    - uses: wtnb75/actions/pyupdate@v1
       with:
         test-args: "-xs"
