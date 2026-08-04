@@ -20,7 +20,7 @@ jobs:
         output-dir: docs
         module: selenible
         other-options: --docformat google
-    - uses: wtnb75/actions/merge-pages@d46e83a56abd145ef1af4a26bc9837ecd8ca4598 # v1.0.7
+    - uses: wtnb75/actions/merge-pages@v1
       with:
         dirs: "cover docs"
         #pydist: dist
